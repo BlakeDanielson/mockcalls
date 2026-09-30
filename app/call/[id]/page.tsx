@@ -1,0 +1,36 @@
+import { eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
+import { CallSession } from "@/components/CallSession";
+import { getDb } from "@/db";
+import { calls } from "@/db/schema";
+import { buildOverrides, getPersona } from "@/lib/personas";
+import { isUuid } from "@/lib/uuid";
+
+export const dynamic = "force-dynamic";
+
+export default async function CallPage(props: PageProps<"/call/[id]">) {
+  const { id } = await props.params;
+  if (!isUuid(id)) notFound();
+
+  const call = await getDb().query.calls.findFirst({ where: eq(calls.id, id) });
+  if (!call) notFound();
+  if (
+    call.status === "ended" ||
+    call.status === "scored" ||
+    call.status === "failed"
+  ) {
+    redirect(`/call/${id}/results`);
+  }
+
+  const persona = getPersona(call.personaId);
+  if (!persona) notFound();
+
+  return (
+    <CallSession
+      callId={call.id}
+      repName={call.repName}
+      persona={persona}
+      overrides={buildOverrides(persona, call.repName)}
+    />
+  );
+}
