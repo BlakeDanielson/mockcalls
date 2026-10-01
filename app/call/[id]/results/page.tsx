@@ -2,12 +2,15 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rescoreCall } from "@/app/actions";
+import { AudioPlayer } from "@/components/AudioPlayer";
+import { MetricsStrip, MomentsTimeline } from "@/components/CallAnalytics";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
 import { ScorecardView } from "@/components/ScorecardView";
 import { ScoringPoller } from "@/components/ScoringPoller";
 import { TranscriptView } from "@/components/TranscriptView";
 import { getDb } from "@/db";
 import { calls } from "@/db/schema";
+import { canSeeCall, requireUser } from "@/lib/auth";
 import { formatClock, formatDate } from "@/lib/format";
 import { getPersona } from "@/lib/personas";
 import { isUuid } from "@/lib/uuid";
@@ -17,16 +20,21 @@ export const dynamic = "force-dynamic";
 export default async function ResultsPage(
   props: PageProps<"/call/[id]/results">,
 ) {
+  const viewer = await requireUser();
   const { id } = await props.params;
   if (!isUuid(id)) notFound();
 
   const call = await getDb().query.calls.findFirst({ where: eq(calls.id, id) });
-  if (!call) notFound();
+  if (!call || !canSeeCall(call, viewer)) notFound();
   const persona = getPersona(call.personaId);
   if (!persona) notFound();
 
   const unfinished = call.status === "created" || call.status === "in_call";
-  const hasTranscript = (call.transcript?.length ?? 0) > 0;
+  const transcript = call.transcript ?? [];
+  const hasTranscript = transcript.length > 0;
+  // A rep reads "You talked 72%"; a manager reading the same page sees the rep's name.
+  const who = viewer.userId === call.userId ? "You" : call.repName.split(" ")[0];
+  const them = persona.name.split(" ")[0];
 
   return (
     <div className="space-y-8">
@@ -51,6 +59,10 @@ export default async function ResultsPage(
         </Link>
       </div>
 
+      {call.elevenlabsConversationId && !unfinished && (
+        <AudioPlayer callId={call.id} />
+      )}
+
       {unfinished && (
         <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
           This call never finished, so there&apos;s nothing to score.
@@ -72,7 +84,7 @@ export default async function ResultsPage(
         >
           <input type="hidden" name="id" value={call.id} />
           <span>Scoring failed{!hasTranscript && " (empty transcript)"}.</span>
-          {hasTranscript && (
+          {hasTranscript && call.userId === viewer.userId && (
             <button
               type="submit"
               className="rounded-md bg-red-700 px-3 py-1.5 font-medium text-white hover:bg-red-600"
@@ -87,10 +99,28 @@ export default async function ResultsPage(
         <ScorecardView scorecard={call.scorecard} />
       )}
 
+      {call.metrics && (
+        <MetricsStrip
+          metrics={call.metrics}
+          who={who}
+          them={them}
+          source={call.transcriptSource}
+          terminationReason={call.terminationReason}
+          durationSecs={call.durationSecs}
+        />
+      )}
+
+      {call.status === "scored" && call.scorecard && (
+        <MomentsTimeline
+          moments={call.scorecard.moments ?? []}
+          entries={transcript}
+        />
+      )}
+
       {hasTranscript && (
         <section>
           <h2 className="mb-3 text-lg font-semibold">Transcript</h2>
-          <TranscriptView entries={call.transcript!} />
+          <TranscriptView entries={transcript} />
         </section>
       )}
     </div>

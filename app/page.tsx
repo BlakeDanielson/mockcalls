@@ -1,11 +1,11 @@
-import { cookies } from "next/headers";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
+import { displayName, requireUser } from "@/lib/auth";
 import { PERSONAS } from "@/lib/personas";
 import { createCall } from "./actions";
 
 export default async function HomePage(props: PageProps<"/">) {
-  const [sp, cookieStore] = await Promise.all([props.searchParams, cookies()]);
-  const lastName = cookieStore.get("repName")?.value ?? "";
+  await requireUser();
+  const [sp, name] = await Promise.all([props.searchParams, displayName()]);
   const showError = sp.error === "missing";
 
   return (
@@ -16,21 +16,13 @@ export default async function HomePage(props: PageProps<"/">) {
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
           Pick a prospect, put your headset on, and hit Call. You&apos;ll get a
-          scorecard when you hang up.
+          scorecard when you hang up. Calling as{" "}
+          <span className="font-medium text-zinc-900 dark:text-zinc-100">
+            {name}
+          </span>
+          .
         </p>
       </div>
-
-      <label className="block">
-        <span className="text-sm font-medium">Your name</span>
-        <input
-          name="repName"
-          defaultValue={lastName}
-          required
-          maxLength={60}
-          placeholder="e.g. Jordan"
-          className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-        />
-      </label>
 
       <fieldset>
         <legend className="text-sm font-medium">Who are you calling?</legend>
@@ -64,9 +56,7 @@ export default async function HomePage(props: PageProps<"/">) {
       </fieldset>
 
       {showError && (
-        <p className="text-sm text-red-600">
-          Enter your name and pick a prospect.
-        </p>
+        <p className="text-sm text-red-600">Pick a prospect to call.</p>
       )}
 
       <button

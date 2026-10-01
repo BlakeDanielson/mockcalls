@@ -1,5 +1,7 @@
+import { ClerkProvider, UserButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { apiUser } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,28 +9,41 @@ export const metadata: Metadata = {
   description: "Cold-call practice against an AI prospect",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const viewer = await apiUser(); // null while signed out (sign-in/up pages)
+
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full scroll-smooth antialiased">
       <body className="flex min-h-full flex-col">
-        <header className="border-b border-zinc-200 dark:border-zinc-800">
-          <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-            <Link href="/" className="font-semibold tracking-tight">
-              mockcalls
-            </Link>
-            <nav className="text-sm text-zinc-600 dark:text-zinc-400">
-              <Link
-                href="/history"
-                className="hover:text-zinc-900 dark:hover:text-zinc-100"
-              >
-                History
+        <ClerkProvider>
+          <header className="border-b border-zinc-200 dark:border-zinc-800">
+            <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+              <Link href="/" className="font-semibold tracking-tight">
+                mockcalls
               </Link>
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
-          {children}
-        </main>
+              {viewer && (
+                <nav className="flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                  <Link
+                    href="/history"
+                    className="hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
+                    {viewer.isManager ? "Team history" : "History"}
+                  </Link>
+                  <Link
+                    href="/analytics"
+                    className="hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
+                    {viewer.isManager ? "Team" : "Trends"}
+                  </Link>
+                  <UserButton />
+                </nav>
+              )}
+            </div>
+          </header>
+          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8">
+            {children}
+          </main>
+        </ClerkProvider>
       </body>
     </html>
   );

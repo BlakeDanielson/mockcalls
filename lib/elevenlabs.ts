@@ -1,3 +1,5 @@
+import type { TranscriptEntry } from "@/db/schema";
+
 const BASE = "https://api.elevenlabs.io/v1/convai";
 
 function apiKey(): string {
@@ -39,14 +41,56 @@ export type ElevenLabsConversation = {
   transcript: {
     role: "user" | "agent";
     message?: string | null;
+    /** Start of the turn in seconds; there is no end time. */
     time_in_call_secs: number;
+    /** Agent turn was cut off by the user. */
+    interrupted?: boolean;
   }[];
-  metadata?: { call_duration_secs?: number };
+  metadata?: {
+    call_duration_secs?: number;
+    termination_reason?: string;
+  };
 };
 
 export function getConversation(conversationId: string) {
   return get<ElevenLabsConversation>(
     `/conversations/${encodeURIComponent(conversationId)}`,
+  );
+}
+
+/**
+ * ElevenLabs transcript → stored shape. Empty turns (tool calls, cut off before
+ * the first word) are dropped. `interrupted` is an explicit boolean on every
+ * prospect turn and absent on SDR turns, so the in-memory object and the jsonb
+ * round-trip are structurally identical.
+ */
+export function toTranscript(convo: ElevenLabsConversation): TranscriptEntry[] {
+  return convo.transcript
+    .filter((t) => t.message?.trim())
+    .map((t) =>
+      t.role === "agent"
+        ? {
+            role: t.role,
+            message: t.message!.trim(),
+            timeInCallSecs: t.time_in_call_secs,
+            interrupted: t.interrupted === true,
+          }
+        : {
+            role: t.role,
+            message: t.message!.trim(),
+            timeInCallSecs: t.time_in_call_secs,
+          },
+    );
+}
+
+/**
+ * The call recording as a raw fetch Response so a route handler can stream it
+ * through. 404 while ElevenLabs is still processing the call.
+ */
+export function fetchConversationAudio(conversationId: string) {
+  return fetch(
+    `${BASE}/conversations/${encodeURIComponent(conversationId)}/audio`,
+    { headers: { "xi-api-key": apiKey() }, cache: "no-store" },
   );
 }
 

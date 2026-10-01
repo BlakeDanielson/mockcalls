@@ -44,7 +44,22 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
   const lines = useRef<TranscriptEntry[]>([]);
   const seenEventIds = useRef(new Set<number>());
   const finishRef = useRef<() => void>(() => {});
+  const endedBy = useRef<"user" | "agent" | "error">("user");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // The SDK's interruption/correction events always concern the prospect line
+  // currently being spoken, i.e. the most recent agent entry.
+  const patchLastAgentLine = (
+    patch: (e: TranscriptEntry) => TranscriptEntry | null,
+  ) => {
+    const idx = lines.current.map((e) => e.role).lastIndexOf("agent");
+    if (idx < 0) return;
+    const next = patch(lines.current[idx]);
+    lines.current = next
+      ? lines.current.map((e, i) => (i === idx ? next : e))
+      : lines.current.filter((_, i) => i !== idx);
+    setTranscript(lines.current);
+  };
 
   const conversation = useConversation({
     overrides,
@@ -68,13 +83,26 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
           role,
           message: text,
           timeInCallSecs: Math.round(secondsSince(startedAt.current)),
+          // explicit false on prospect lines so "0 interruptions" is distinguishable from "unknown"
+          ...(role === "agent" ? { interrupted: false } : {}),
         },
       ];
       setTranscript(lines.current);
     },
+    onInterruption: () => {
+      patchLastAgentLine((e) => ({ ...e, interrupted: true }));
+    },
+    onAgentResponseCorrection: ({ corrected_agent_response }) => {
+      // agent_response carried the full planned reply; keep only what was actually said.
+      const text = corrected_agent_response.trim();
+      patchLastAgentLine((e) => (text ? { ...e, message: text } : null));
+    },
     onDisconnect: (details) => {
       // "user" means we hung up ourselves and finish() is already running.
-      if (details.reason !== "user") finishRef.current();
+      if (details.reason !== "user") {
+        endedBy.current = details.reason;
+        finishRef.current();
+      }
     },
     onError: (message) => {
       setError(message);
@@ -97,11 +125,21 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       const res = await fetch(`/api/calls/${callId}/end`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ transcript: lines.current, durationSecs }),
+        body: JSON.stringify({
+          transcript: lines.current,
+          durationSecs,
+          endedBy: endedBy.current,
+        }),
       });
+      if (res.status === 401) {
+        throw new Error(
+          "Your session expired. Sign in again in another tab, then retry saving — your transcript is still here.",
+        );
+      }
       if (!res.ok) throw new Error(`Saving the call failed (${res.status})`);
       router.push(`/call/${callId}/results`);
     } catch (err) {
+      ending.current = false; // allow "Retry save" without losing the transcript
       setError(err instanceof Error ? err.message : String(err));
       setPhase("error");
     }
@@ -237,12 +275,21 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
         <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
           <p>{error}</p>
           <div className="mt-3 flex items-center gap-4">
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-md bg-red-700 px-3 py-1.5 font-medium text-white hover:bg-red-600"
-            >
-              Try again
-            </button>
+            {transcript.length > 0 ? (
+              <button
+                onClick={() => finish()}
+                className="rounded-md bg-red-700 px-3 py-1.5 font-medium text-white hover:bg-red-600"
+              >
+                Retry save
+              </button>
+            ) : (
+              <button
+                onClick={() => window.location.reload()}
+                className="rounded-md bg-red-700 px-3 py-1.5 font-medium text-white hover:bg-red-600"
+              >
+                Try again
+              </button>
+            )}
             <Link href={`/call/${callId}/results`} className="underline">
               See what was saved
             </Link>

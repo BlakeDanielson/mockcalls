@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { calls } from "@/db/schema";
+import { apiUser } from "@/lib/auth";
 import { getWebrtcToken } from "@/lib/elevenlabs";
 import { isUuid } from "@/lib/uuid";
 
@@ -8,12 +9,18 @@ export async function POST(
   _req: Request,
   ctx: RouteContext<"/api/calls/[id]/start">,
 ) {
+  const viewer = await apiUser();
+  if (!viewer) return Response.json({ error: "unauthorized" }, { status: 401 });
+
   const { id } = await ctx.params;
   if (!isUuid(id)) return Response.json({ error: "not found" }, { status: 404 });
 
   const db = getDb();
   const call = await db.query.calls.findFirst({ where: eq(calls.id, id) });
-  if (!call) return Response.json({ error: "not found" }, { status: 404 });
+  // Only the owning rep can start their call.
+  if (!call || call.userId !== viewer.userId) {
+    return Response.json({ error: "not found" }, { status: 404 });
+  }
   if (call.status !== "created" && call.status !== "in_call") {
     return Response.json(
       { error: "this call has already ended" },

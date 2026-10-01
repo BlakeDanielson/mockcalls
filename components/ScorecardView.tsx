@@ -1,6 +1,7 @@
-import type { Scorecard } from "@/lib/scoring";
+import type { StoredScorecard } from "@/lib/scoring";
+import { TagChips } from "./TagChips";
 
-type Outcome = Scorecard["outcome"];
+type Outcome = StoredScorecard["outcome"];
 
 const OUTCOME_LABELS: Record<Outcome, string> = {
   meeting_booked: "Meeting booked",
@@ -27,13 +28,17 @@ export function outcomeLabel(outcome: Outcome): string {
   return OUTCOME_LABELS[outcome] ?? outcome;
 }
 
-function scoreColor(n: number): string {
+export function scoreColor(n: number): string {
   if (n >= 8) return "text-emerald-600 dark:text-emerald-400";
   if (n >= 5) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
 }
 
-const SCORE_ROWS: {
+/** One tile style, shared with the metrics strip and the analytics page. */
+export const TILE_CLASS =
+  "rounded-lg border border-zinc-200 p-3 dark:border-zinc-800";
+
+export const SCORE_ROWS: {
   key: "opener" | "discovery" | "objectionHandling" | "close";
   label: string;
 }[] = [
@@ -67,7 +72,10 @@ function List({
   );
 }
 
-export function ScorecardView({ scorecard: s }: { scorecard: Scorecard }) {
+export function ScorecardView({ scorecard: s }: { scorecard: StoredScorecard }) {
+  const notAssessed: readonly string[] = s.notAssessed ?? [];
+  const tags = s.tags ?? [];
+
   return (
     <section className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -81,25 +89,39 @@ export function ScorecardView({ scorecard: s }: { scorecard: Scorecard }) {
           {outcomeLabel(s.outcome)}
         </span>
         <p className="basis-full text-zinc-700 dark:text-zinc-300">{s.summary}</p>
+        {tags.length > 0 && (
+          <div className="basis-full">
+            <TagChips tags={tags} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {SCORE_ROWS.map((r) => (
-          <div
-            key={r.key}
-            className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
-          >
-            <div className="text-xs uppercase tracking-wide text-zinc-500">
-              {r.label}
+        {SCORE_ROWS.map((r) => {
+          const na = notAssessed.includes(r.key);
+          return (
+            <div key={r.key} className={TILE_CLASS}>
+              <div className="text-xs uppercase tracking-wide text-zinc-500">
+                {r.label}
+              </div>
+              {na ? (
+                <div
+                  className="text-2xl font-semibold text-zinc-400"
+                  title="No opportunity on this call"
+                >
+                  n/a
+                </div>
+              ) : (
+                <div
+                  className={`text-2xl font-semibold tabular-nums ${scoreColor(s[r.key])}`}
+                >
+                  {s[r.key]}
+                  <span className="text-sm text-zinc-400">/10</span>
+                </div>
+              )}
             </div>
-            <div
-              className={`text-2xl font-semibold tabular-nums ${scoreColor(s[r.key])}`}
-            >
-              {s[r.key]}
-              <span className="text-sm text-zinc-400">/10</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="rounded-xl border-l-4 border-zinc-900 bg-zinc-50 p-4 dark:border-zinc-100 dark:bg-zinc-900">
