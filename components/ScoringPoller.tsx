@@ -3,27 +3,51 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+const INTERVAL_MS = 3000;
+/** ~2 minutes, past the results page's stuck threshold, after which the page
+ *  re-renders with the "try again" form instead of the spinner. */
+const MAX_POLLS = 40;
+
 /** Refreshes the results page once scoring lands. Renders nothing. */
 export function ScoringPoller({ callId }: { callId: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setInterval(async () => {
+    let cancelled = false;
+    let polls = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    // setTimeout re-armed after each response, so slow requests never overlap.
+    const poll = async () => {
+      if (cancelled) return;
+      polls++;
       const res = await fetch(`/api/calls/${callId}`).catch(() => null);
+      if (cancelled) return;
       if (res?.status === 401) {
         // Session ended: let the page's requireUser send us to sign-in and back.
-        clearInterval(timer);
         router.refresh();
         return;
       }
-      if (!res?.ok) return;
-      const { status } = (await res.json()) as { status: string };
-      if (status === "scored" || status === "failed") {
-        clearInterval(timer);
-        router.refresh();
+      if (res?.ok) {
+        const data = (await res.json().catch(() => null)) as { status?: string } | null;
+        if (data?.status === "scored" || data?.status === "failed") {
+          router.refresh();
+          return;
+        }
       }
-    }, 3000);
-    return () => clearInterval(timer);
+      if (polls >= MAX_POLLS) {
+        // Give up spinning; the page decides whether the call is stuck.
+        router.refresh();
+        return;
+      }
+      timer = setTimeout(poll, INTERVAL_MS);
+    };
+    timer = setTimeout(poll, INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [callId, router]);
 
   return null;

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rescoreCall } from "@/app/actions";
@@ -13,9 +13,12 @@ import { calls } from "@/db/schema";
 import { canSeeCall, requireUser } from "@/lib/auth";
 import { formatClock, formatDate } from "@/lib/format";
 import { getPersona } from "@/lib/personas";
+import { STUCK_AFTER_SECS } from "@/lib/run-scoring";
 import { isUuid } from "@/lib/uuid";
 
 export const dynamic = "force-dynamic";
+// rescoreCall runs the judge inside this page's server action.
+export const maxDuration = 120;
 
 export default async function ResultsPage(
   props: PageProps<"/call/[id]/results">,
@@ -24,12 +27,22 @@ export default async function ResultsPage(
   const { id } = await props.params;
   if (!isUuid(id)) notFound();
 
-  const call = await getDb().query.calls.findFirst({ where: eq(calls.id, id) });
+  const call = await getDb().query.calls.findFirst({
+    where: eq(calls.id, id),
+    extras: {
+      // `ended` normally means "scoring in progress"; after STUCK_AFTER_SECS the
+      // scoring request is gone and the rep needs a way to kick it again.
+      stuck: sql<boolean>`${calls.status} = 'ended' and ${calls.endedAt} < now() - make_interval(secs => ${STUCK_AFTER_SECS})`.as(
+        "stuck",
+      ),
+    },
+  });
   if (!call || !canSeeCall(call, viewer)) notFound();
   const persona = getPersona(call.personaId);
   if (!persona) notFound();
 
   const unfinished = call.status === "created" || call.status === "in_call";
+  const stuck = call.stuck === true;
   const transcript = call.transcript ?? [];
   const hasTranscript = transcript.length > 0;
   // A rep reads "You talked 72%"; a manager reading the same page sees the rep's name.
@@ -69,7 +82,7 @@ export default async function ResultsPage(
         </p>
       )}
 
-      {call.status === "ended" && (
+      {call.status === "ended" && !stuck && (
         <div className="flex items-center gap-3 rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
           <span className="inline-block size-2 animate-pulse rounded-full bg-zinc-900 dark:bg-zinc-100" />
           Scoring your call… this usually takes under a minute.
@@ -77,13 +90,16 @@ export default async function ResultsPage(
         </div>
       )}
 
-      {call.status === "failed" && (
+      {(call.status === "failed" || stuck) && (
         <form
           action={rescoreCall}
           className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
         >
           <input type="hidden" name="id" value={call.id} />
-          <span>Scoring failed{!hasTranscript && " (empty transcript)"}.</span>
+          <span>
+            {stuck ? "Scoring didn't finish" : "Scoring failed"}
+            {!hasTranscript && " (empty transcript)"}.
+          </span>
           {hasTranscript && call.userId === viewer.userId && (
             <button
               type="submit"

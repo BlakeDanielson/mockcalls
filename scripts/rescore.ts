@@ -3,6 +3,7 @@
 //   pnpm rescore                      recompute metrics for the newest 50 finished calls
 //   pnpm rescore --metrics --missing  only rows without metrics
 //   pnpm rescore --refetch --missing  upgrade browser-transcript rows to the ElevenLabs transcript
+//                                     (re-runs metrics and the judge, since moment indexes change)
 //   pnpm rescore --claude --id <uuid> re-run the judge for one call (20–40 s, a few cents)
 //   pnpm rescore --claude --dry-run --id <uuid>   score without writing (run ×3 to gauge variance)
 //   pnpm rescore --reasons            list termination_reason strings and how they map
@@ -17,7 +18,7 @@ try {
 }
 
 import { parseArgs } from "node:util";
-import { desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { calls, type Call } from "@/db/schema";
 import { getConversation, toTranscript } from "@/lib/elevenlabs";
@@ -65,14 +66,16 @@ async function main() {
         ? isNull(calls.metrics)
         : mode === "refetch"
           ? eq(calls.transcriptSource, "client")
-          : sql`${calls.scorecard} is null or ${calls.scorecard}->'moments' is null`;
+          : or(isNull(calls.scorecard), sql`${calls.scorecard}->'moments' is null`);
 
   const rows: Call[] = flags.id.length
     ? await db.select().from(calls).where(inArray(calls.id, flags.id))
     : await db
         .select()
         .from(calls)
-        .where(missing ? sql`${FINISHED} and ${missing}` : FINISHED)
+        // and() parenthesises `missing`; a raw template would let its OR escape
+        // the status filter and pick up calls that are still in progress.
+        .where(missing ? and(FINISHED, missing) : FINISHED)
         .orderBy(desc(calls.createdAt))
         .limit(Number(flags.limit));
 
@@ -144,7 +147,9 @@ async function main() {
         continue;
       }
 
-      if (mode === "claude") {
+      // A refetched transcript has different turn indexes, so the judge's
+      // key moments must be recomputed along with the metrics.
+      if (mode === "claude" || mode === "refetch") {
         const status = await runScoring(call);
         console.log(`${label} → ${status}`);
         if (status === "failed") failed++;

@@ -234,7 +234,10 @@ export async function scoreCall(
         content: `Rep: ${repName}\n\nProspect persona:\n${personaBrief(persona)}\n\nTurns are numbered #0…#${Math.max(transcript.length - 1, 0)}; times are turn starts in whole seconds; cite the number when you report a moment.\n\nTranscript:\n${formatTranscript(transcript)}`,
       },
     ],
-    output_config: { format: zodOutputFormat(ScorecardSchema) },
+    // Opus defaults to effort "high", whose thinking shares the 16k budget with
+    // the scorecard; medium keeps the judge well under the cap and the request
+    // under the route's maxDuration.
+    output_config: { effort: "medium", format: zodOutputFormat(ScorecardSchema) },
   });
 
   if (res.stop_reason === "refusal") {

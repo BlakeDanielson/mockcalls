@@ -1,12 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { calls } from "@/db/schema";
 import { displayName, requireUser } from "@/lib/auth";
 import { getPersona } from "@/lib/personas";
-import { runScoring } from "@/lib/run-scoring";
+import { runScoring, STUCK_AFTER_SECS } from "@/lib/run-scoring";
 import { isUuid } from "@/lib/uuid";
 
 export async function createCall(formData: FormData) {
@@ -28,11 +28,27 @@ export async function rescoreCall(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!isUuid(id)) redirect("/history");
 
-  const call = await getDb().query.calls.findFirst({ where: eq(calls.id, id) });
-  // Re-scoring is a write: owner only, and only for a call whose scoring failed.
-  if (call && call.userId === viewer.userId && call.status === "failed") {
-    await runScoring(call);
-  }
+  // Re-scoring is a write: owner only, for a call whose scoring failed or got
+  // stuck. Moving failed → ended in the same statement that selects the row
+  // makes a double submit on a failed call match zero rows.
+  const [call] = await getDb()
+    .update(calls)
+    .set({ status: "ended" })
+    .where(
+      and(
+        eq(calls.id, id),
+        eq(calls.userId, viewer.userId),
+        or(
+          eq(calls.status, "failed"),
+          and(
+            eq(calls.status, "ended"),
+            sql`${calls.endedAt} < now() - make_interval(secs => ${STUCK_AFTER_SECS})`,
+          ),
+        ),
+      ),
+    )
+    .returning();
+  if (call) await runScoring(call);
 
   redirect(`/call/${id}/results`);
 }

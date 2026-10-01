@@ -104,10 +104,15 @@ export async function waitForDone(
   { attempts = 6, delayMs = 2500 } = {},
 ): Promise<ElevenLabsConversation | null> {
   for (let i = 0; i < attempts; i++) {
-    const convo = await getConversation(conversationId);
-    if (convo.status === "done") return convo;
-    if (convo.status === "failed") return null;
-    await new Promise((r) => setTimeout(r, delayMs));
+    // One transient 5xx or a 404 while the record is being written must not
+    // abandon the remaining attempts.
+    const convo = await getConversation(conversationId).catch((err) => {
+      console.warn(`[elevenlabs] attempt ${i + 1}/${attempts} for ${conversationId}:`, err);
+      return null;
+    });
+    if (convo?.status === "done") return convo;
+    if (convo?.status === "failed") return null;
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
   }
   return null;
 }

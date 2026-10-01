@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { calls, type TranscriptEntry } from "@/db/schema";
@@ -22,6 +22,9 @@ const Body = z.object({
   endedBy: z.enum(["user", "agent", "error"]).optional(),
 });
 
+// ElevenLabs polling (up to 15 s) plus the Claude judge run inside this request.
+export const maxDuration = 120;
+
 export async function POST(
   req: Request,
   ctx: RouteContext<"/api/calls/[id]/end">,
@@ -31,17 +34,6 @@ export async function POST(
 
   const { id } = await ctx.params;
   if (!isUuid(id)) return Response.json({ error: "not found" }, { status: 404 });
-
-  const db = getDb();
-  const call = await db.query.calls.findFirst({ where: eq(calls.id, id) });
-  // Only the owning rep can end their call.
-  if (!call || call.userId !== viewer.userId) {
-    return Response.json({ error: "not found" }, { status: 404 });
-  }
-  // Idempotent: a second submit (agent hang-up racing the End button) is a no-op.
-  if (call.status === "scored" || call.status === "failed") {
-    return Response.json({ status: call.status });
-  }
 
   const body = Body.safeParse(await req.json().catch(() => null));
   if (!body.success) {
@@ -55,7 +47,14 @@ export async function POST(
   let transcriptSource: "client" | "elevenlabs" = "client";
   let durationSecs = body.data.durationSecs;
   let terminationReason: string | null = clientHint;
-  await db
+
+  // One atomic claim: only the request that moves the row from in_call to
+  // ended goes on to fetch the transcript and score. A second submit (agent
+  // hang-up racing the End button, or "Retry save" after a client timeout)
+  // matches zero rows and just reports the current status. Only the owning
+  // rep can end their call, and a call that never started has nothing to score.
+  const db = getDb();
+  const [call] = await db
     .update(calls)
     .set({
       transcript,
@@ -65,7 +64,31 @@ export async function POST(
       status: "ended",
       endedAt: new Date(),
     })
-    .where(eq(calls.id, id));
+    .where(
+      and(
+        eq(calls.id, id),
+        eq(calls.userId, viewer.userId),
+        eq(calls.status, "in_call"),
+      ),
+    )
+    .returning();
+
+  if (!call) {
+    const existing = await db.query.calls.findFirst({
+      where: and(eq(calls.id, id), eq(calls.userId, viewer.userId)),
+      columns: { status: true },
+    });
+    if (!existing) {
+      return Response.json({ error: "not found" }, { status: 404 });
+    }
+    if (existing.status === "created") {
+      return Response.json(
+        { error: "this call was never started" },
+        { status: 409 },
+      );
+    }
+    return Response.json({ status: existing.status });
+  }
 
   // Prefer ElevenLabs' own transcript (real timestamps, interruption flags,
   // nothing missed) once it has finished processing; keep the client copy if

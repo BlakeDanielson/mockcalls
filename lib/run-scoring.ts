@@ -5,6 +5,13 @@ import { computeMetrics, type CallMetrics } from "./metrics";
 import { getPersona } from "./personas";
 import { scoreCall } from "./scoring";
 
+/**
+ * A call still at `ended` this long after it ended is stuck (the scoring
+ * request died mid-way), not in progress. Used by the rescore action and the
+ * results page.
+ */
+export const STUCK_AFTER_SECS = 90;
+
 /** Deterministic metrics from the stored transcript; cheap, idempotent, no network. */
 export async function storeMetrics(call: Call): Promise<CallMetrics> {
   const metrics = computeMetrics({
@@ -24,16 +31,25 @@ export async function storeMetrics(call: Call): Promise<CallMetrics> {
  */
 export async function runScoring(call: Call): Promise<CallStatus> {
   const db = getDb();
-  await storeMetrics(call);
+  const markFailed = () =>
+    db
+      .update(calls)
+      .set({ status: "failed" })
+      .where(eq(calls.id, call.id))
+      .catch((err) => console.error(`[scoring] call ${call.id} could not mark failed`, err));
 
-  const persona = getPersona(call.personaId);
-  const transcript = call.transcript ?? [];
-  if (!persona || transcript.length === 0) {
-    await db.update(calls).set({ status: "failed" }).where(eq(calls.id, call.id));
-    return "failed";
-  }
-
+  // Everything is inside the try so no exception can leave the row at `ended`,
+  // which the results page would show as "scoring" forever.
   try {
+    await storeMetrics(call);
+
+    const persona = getPersona(call.personaId);
+    const transcript = call.transcript ?? [];
+    if (!persona || transcript.length === 0) {
+      await markFailed();
+      return "failed";
+    }
+
     const scorecard = await scoreCall(transcript, persona, call.repName);
     await db
       .update(calls)
@@ -42,7 +58,7 @@ export async function runScoring(call: Call): Promise<CallStatus> {
     return "scored";
   } catch (err) {
     console.error(`[scoring] call ${call.id} failed`, err);
-    await db.update(calls).set({ status: "failed" }).where(eq(calls.id, call.id));
+    await markFailed();
     return "failed";
   }
 }

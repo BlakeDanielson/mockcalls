@@ -116,7 +116,7 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
     setPhase("ending");
     const durationSecs = Math.round(secondsSince(startedAt.current));
     try {
-      conversation.endSession();
+      await conversation.endSession();
     } catch {
       // already disconnected (prospect hung up, or connection dropped)
     }
@@ -176,7 +176,9 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       if (!res.ok || !data.conversationToken) {
         throw new Error(data.error ?? `Could not start the call (${res.status})`);
       }
-      conversation.startSession({ conversationToken: data.conversationToken });
+      // Awaited so a WebRTC failure lands in the catch instead of leaving the
+      // button stuck on "starting".
+      await conversation.startSession({ conversationToken: data.conversationToken });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setPhase("idle");
