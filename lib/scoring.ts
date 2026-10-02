@@ -223,7 +223,11 @@ export async function scoreCall(
   persona: Persona,
   repName: string,
 ): Promise<Scorecard> {
-  const client = new Anthropic();
+  // An API key that is not scoped to a workspace must name one per request.
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
+  const client = new Anthropic({
+    defaultHeaders: workspaceId ? { "anthropic-workspace-id": workspaceId } : undefined,
+  });
   const res = await client.messages.parse({
     model: "claude-opus-5",
     max_tokens: 16000,

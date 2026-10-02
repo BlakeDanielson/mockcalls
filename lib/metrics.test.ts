@@ -193,6 +193,8 @@ describe("mapTerminationReason", () => {
     assert.equal(mapTerminationReason("inactivity timeout"), "timeout");
     assert.equal(mapTerminationReason("end_call tool was called"), "prospect");
     assert.equal(mapTerminationReason("Client disconnected"), "sdr");
+    // the exact string ElevenLabs sends when the SDR presses End (pinned)
+    assert.equal(mapTerminationReason("Client disconnected: 1000"), "sdr");
     assert.equal(mapTerminationReason("something else"), "unknown");
   });
 });

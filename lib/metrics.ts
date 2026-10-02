@@ -138,7 +138,9 @@ const EXACT: Record<string, EndedBy> = {
   "client:user": "sdr",
   "client:agent": "prospect",
   "client:error": "unknown",
-  // real ElevenLabs strings get pinned here after `pnpm rescore --reasons`
+  // Real ElevenLabs strings (lowercased), pinned from `pnpm rescore --reasons`.
+  // The SDR pressing End closes the WebRTC session with a normal close code.
+  "client disconnected: 1000": "sdr",
 };
 const PATTERNS: [RegExp, EndedBy][] = [
   [/timeout|time.?limit|max.?duration|inactiv|silence/i, "timeout"],
