@@ -21,7 +21,10 @@ export type Persona = {
   objections: string[];
   /** What a "win" looks like against this persona. */
   winCondition: string;
-  /** ElevenLabs voice id (default voice library). Swap freely. */
+  /**
+   * ElevenLabs voice id: a premade voice, or a designed voice saved in the
+   * workspace library (those use one of the plan's custom-voice slots).
+   */
   voiceId: string;
   /**
    * Per-persona delivery, overriding the agent defaults (stability 0.5,
@@ -58,7 +61,7 @@ export const PERSONAS: Persona[] = [
     ],
     winCondition:
       "She agrees to a 20-minute call with a specific date, or asks the rep to send a one-pager to her directly and names a follow-up time.",
-    voiceId: "hpp4J3VqNfWAUOO0d1Us",
+    voiceId: "XrExE9yKIg1WjnnlVkGX", // Matilda (premade): professional American alto
     voice: { stability: 0.65, speed: 1.05 },
     firstMessage: "Dana Whitfield.",
   },
@@ -86,7 +89,7 @@ export const PERSONAS: Persona[] = [
     ],
     winCondition:
       "He agrees to a specific 15-minute slot later this week, or tells the rep exactly when to call back and what to lead with.",
-    voiceId: "cjVigY5qzO86Huf0OWal",
+    voiceId: "qVXweZMboBB51oAZE22Q", // designed voice "mockcalls: Marcus Reyes (VP Ops)"
     voice: { stability: 0.35, speed: 1.15 },
     firstMessage: "Yeah, this is Marcus — who's this?",
   },
@@ -113,7 +116,7 @@ export const PERSONAS: Persona[] = [
     ],
     winCondition:
       "She agrees to a specific meeting time or agrees to loop in her director on a scheduled call.",
-    voiceId: "cgSgspJ2msm6clMCkdW9",
+    voiceId: "TkJmXrICmCzgNDOSHzuH", // designed voice "mockcalls: Priya Natarajan (Marketing)"
     voice: { stability: 0.3, speed: 1.0 },
     firstMessage: "Hi, this is Priya!",
   },
@@ -140,7 +143,7 @@ export const PERSONAS: Persona[] = [
     ],
     winCondition:
       "He gives the rep the right person's name and a direct line or email, or the best time and way to reach the CEO, or agrees to pass along a specific message.",
-    voiceId: "iP95p4xoKVk53GoZ742B",
+    voiceId: "wzFcqdr5lgUaXMnba5PN", // designed voice "mockcalls: Tom Alvarez (Gatekeeper)"
     voice: { stability: 0.75, speed: 0.95 },
     firstMessage: "Sterling and Vance, this is Tom.",
   },
