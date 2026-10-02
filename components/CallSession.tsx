@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TranscriptEntry } from "@/db/schema";
-import { formatClock } from "@/lib/format";
+import { formatClock, stripDeliveryTags } from "@/lib/format";
 import type { Persona, SessionOverrides } from "@/lib/personas";
 import { DifficultyBadge } from "./DifficultyBadge";
 import { TranscriptView } from "./TranscriptView";
@@ -68,7 +68,7 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       setPhase("live");
     },
     onMessage: ({ message, role, event_id }) => {
-      const text = message.trim();
+      const text = stripDeliveryTags(message);
       if (!text) return;
       if (event_id !== undefined) {
         if (seenEventIds.current.has(event_id)) return;

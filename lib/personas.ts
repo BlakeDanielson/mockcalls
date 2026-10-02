@@ -23,6 +23,12 @@ export type Persona = {
   winCondition: string;
   /** ElevenLabs voice id (default voice library). Swap freely. */
   voiceId: string;
+  /**
+   * Per-persona delivery, overriding the agent defaults (stability 0.5,
+   * speed 1.0). Lower stability = more variation and emotion; speed is
+   * 0.7 to 1.2. Both must be enabled as overrides on the ElevenLabs agent.
+   */
+  voice: { stability: number; speed: number };
   /** How they answer the phone. */
   firstMessage: string;
 };
@@ -53,6 +59,7 @@ export const PERSONAS: Persona[] = [
     winCondition:
       "She agrees to a 20-minute call with a specific date, or asks the rep to send a one-pager to her directly and names a follow-up time.",
     voiceId: "hpp4J3VqNfWAUOO0d1Us",
+    voice: { stability: 0.65, speed: 1.05 },
     firstMessage: "Dana Whitfield.",
   },
   {
@@ -80,6 +87,7 @@ export const PERSONAS: Persona[] = [
     winCondition:
       "He agrees to a specific 15-minute slot later this week, or tells the rep exactly when to call back and what to lead with.",
     voiceId: "cjVigY5qzO86Huf0OWal",
+    voice: { stability: 0.35, speed: 1.15 },
     firstMessage: "Yeah, this is Marcus — who's this?",
   },
   {
@@ -106,6 +114,7 @@ export const PERSONAS: Persona[] = [
     winCondition:
       "She agrees to a specific meeting time or agrees to loop in her director on a scheduled call.",
     voiceId: "cgSgspJ2msm6clMCkdW9",
+    voice: { stability: 0.3, speed: 1.0 },
     firstMessage: "Hi, this is Priya!",
   },
   {
@@ -132,6 +141,7 @@ export const PERSONAS: Persona[] = [
     winCondition:
       "He gives the rep the right person's name and a direct line or email, or the best time and way to reach the CEO, or agrees to pass along a specific message.",
     voiceId: "iP95p4xoKVk53GoZ742B",
+    voice: { stability: 0.75, speed: 0.95 },
     firstMessage: "Sterling and Vance, this is Tom.",
   },
 ];
@@ -156,6 +166,7 @@ export function buildSystemPrompt(persona: Persona, repName: string): string {
     `- ${persona.personality}`,
     `- ${IMPATIENCE[persona.difficulty]}`,
     "- Speak like a real person on the phone: short sentences, natural pauses, occasional filler. One or two sentences per turn unless the rep has genuinely engaged you.",
+    "- Your voice is expressive: you may prefix a sentence with one short delivery tag in square brackets such as [sighs], [flat], [impatient], [warmly], [laughs], [slow] when it fits your mood. At most one tag per turn, often none.",
     "- Raise objections naturally when they fit, not as a checklist. Objections you tend to use:",
     ...persona.objections.map((o) => `  - "${o}"`),
     "- Only reveal your real problems if the rep asks a good question and has earned it. Your real situation:",
@@ -173,7 +184,11 @@ export function buildOverrides(persona: Persona, repName: string) {
       prompt: { prompt: buildSystemPrompt(persona, repName) },
       firstMessage: persona.firstMessage,
     },
-    tts: { voiceId: persona.voiceId },
+    tts: {
+      voiceId: persona.voiceId,
+      stability: persona.voice.stability,
+      speed: persona.voice.speed,
+    },
   };
 }
 

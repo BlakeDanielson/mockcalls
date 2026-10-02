@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { stripDeliveryTags } from "./format";
 import type { TranscriptEntry } from "@/db/schema";
 import {
   classifyQuestion,
@@ -196,5 +197,14 @@ describe("mapTerminationReason", () => {
     // the exact string ElevenLabs sends when the SDR presses End (pinned)
     assert.equal(mapTerminationReason("Client disconnected: 1000"), "sdr");
     assert.equal(mapTerminationReason("something else"), "unknown");
+  });
+});
+
+describe("stripDeliveryTags", () => {
+  it("removes expressive delivery tags but keeps the words", () => {
+    assert.equal(stripDeliveryTags("[sighs] We're not evaluating anything."), "We're not evaluating anything.");
+    assert.equal(stripDeliveryTags("Fine. [slow] Tuesday at ten."), "Fine. Tuesday at ten.");
+    assert.equal(stripDeliveryTags("[impatient]"), "");
+    assert.equal(stripDeliveryTags("  plain text  "), "plain text");
   });
 });

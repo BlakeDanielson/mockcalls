@@ -1,4 +1,5 @@
 import type { TranscriptEntry } from "@/db/schema";
+import { stripDeliveryTags } from "./format";
 
 const BASE = "https://api.elevenlabs.io/v1/convai";
 
@@ -66,18 +67,19 @@ export function getConversation(conversationId: string) {
  */
 export function toTranscript(convo: ElevenLabsConversation): TranscriptEntry[] {
   return convo.transcript
-    .filter((t) => t.message?.trim())
+    .map((t) => ({ ...t, message: stripDeliveryTags(t.message ?? "") }))
+    .filter((t) => t.message)
     .map((t) =>
       t.role === "agent"
         ? {
             role: t.role,
-            message: t.message!.trim(),
+            message: t.message,
             timeInCallSecs: t.time_in_call_secs,
             interrupted: t.interrupted === true,
           }
         : {
             role: t.role,
-            message: t.message!.trim(),
+            message: t.message,
             timeInCallSecs: t.time_in_call_secs,
           },
     );
