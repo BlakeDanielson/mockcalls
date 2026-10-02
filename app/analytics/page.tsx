@@ -1,7 +1,7 @@
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import Link from "next/link";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
-import { SCORE_ROWS, TILE_CLASS, scoreColor } from "@/components/ScorecardView";
+import { SCORE_ROWS, TILE_CLASS, outcomeLabel, scoreColor } from "@/components/ScorecardView";
 import { getDb } from "@/db";
 import { calls } from "@/db/schema";
 import {
@@ -14,11 +14,10 @@ import {
   talkShareAverage,
   topTag,
   weekStartKey,
-  type CallLite,
   type ScoreKey,
 } from "@/lib/analytics";
 import { requireUser } from "@/lib/auth";
-import { APP_TIMEZONE, formatDate } from "@/lib/format";
+import { APP_TIMEZONE, formatClock, formatDate } from "@/lib/format";
 import { SDR_TALK_TARGET, TREND_N } from "@/lib/metrics";
 import { PERSONAS, getPersona } from "@/lib/personas";
 import { tagMeta } from "@/lib/taxonomy";
@@ -90,6 +89,7 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
         scorecard: calls.scorecard,
         metrics: calls.metrics,
         transcriptSource: calls.transcriptSource,
+        durationSecs: calls.durationSecs,
       })
       .from(calls)
       // Reps are always scoped to themselves; managers see every finished call.
@@ -124,13 +124,13 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
   };
 
   // Trend series: the rep's last N scored calls, oldest → newest.
-  const trendRows: CallLite[] = repId
+  const trendRows = repId
     ? rows
-        .filter(isScored)
-        .filter((r) => r.userId === repId && (!personaId || r.personaId === personaId))
+        .filter((r) => isScored(r) && r.userId === repId && (!personaId || r.personaId === personaId))
         .slice(0, TREND_N)
         .reverse()
     : [];
+  const historyHref = viewer.isManager && repId ? `/history?rep=${encodeURIComponent(repId)}` : "/history";
   const series = (key: ScoreKey) =>
     trendRows.map((r) =>
       isScored(r) && !(r.scorecard.notAssessed ?? []).includes(key as never) ? r.scorecard[key] : null,
@@ -215,6 +215,7 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
                     <th className="px-3 py-2 text-right">Booked</th>
                     <th className="px-3 py-2">Top miss</th>
                     <th className="px-3 py-2">Last call</th>
+                    <th className="px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
@@ -240,6 +241,11 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
                       <td className="px-3 py-2 text-right tabular-nums">{pct(r.booked.rate)}</td>
                       <td className="px-3 py-2">{r.topMiss ? tagMeta(r.topMiss.tag).label : "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{r.lastCall ? formatDate(r.lastCall) : "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-right">
+                        <Link href={`/history?rep=${encodeURIComponent(r.userId)}`} className="text-zinc-500 underline-offset-2 hover:underline">
+                          View calls
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -324,6 +330,55 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
                     </>
                   )}
                 </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-sm font-medium">Calls behind these numbers</h3>
+                    <Link href={historyHref} className="text-sm text-zinc-500 underline-offset-2 hover:underline">
+                      All calls in History
+                    </Link>
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <table className="w-full text-sm">
+                      <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900">
+                        <tr>
+                          <th className="px-3 py-2">When</th>
+                          <th className="px-3 py-2">Prospect</th>
+                          <th className="px-3 py-2">Length</th>
+                          <th className="px-3 py-2">Outcome</th>
+                          <th className="px-3 py-2 text-right">Overall</th>
+                          <th className="px-3 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...trendRows].reverse().map((c) => {
+                          if (!isScored(c)) return null;
+                          const persona = getPersona(c.personaId);
+                          return (
+                            <tr key={c.id} className="border-t border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900">
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                <Link href={`/call/${c.id}/results`} className="underline-offset-2 hover:underline">
+                                  {formatDate(c.createdAt)}
+                                </Link>
+                              </td>
+                              <td className="px-3 py-2">{persona?.name ?? c.personaId}</td>
+                              <td className="px-3 py-2 tabular-nums">{c.durationSecs != null ? formatClock(c.durationSecs) : "—"}</td>
+                              <td className="px-3 py-2">{outcomeLabel(c.scorecard.outcome)}</td>
+                              <td className={`px-3 py-2 text-right font-medium tabular-nums ${scoreColor(c.scorecard.overall)}`}>
+                                {c.scorecard.overall}/10
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap text-right">
+                                <Link href={`/call/${c.id}/results`} className="text-zinc-500 underline-offset-2 hover:underline">
+                                  Transcript &amp; recording
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </>
             )}
           </>
