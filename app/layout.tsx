@@ -35,6 +35,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   >
                     {viewer.isManager ? "Team" : "Trends"}
                   </Link>
+                  {viewer.isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="hover:text-zinc-900 dark:hover:text-zinc-100"
+                    >
+                      People
+                    </Link>
+                  )}
                   <UserButton />
                 </nav>
               )}

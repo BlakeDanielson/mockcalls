@@ -4,7 +4,7 @@ Cold-call practice for SDRs. Sign in, pick a prospect persona, talk to it over y
 
 - **Voice:** one ElevenLabs agent; each persona overrides its prompt, opening line, and voice per call (`lib/personas.ts`).
 - **Scoring:** Claude reads the transcript and returns a structured scorecard (`lib/scoring.ts`).
-- **Auth:** Clerk. Sign-ups are allow-listed to `@outsorcy.com`. A user whose Clerk `publicMetadata.role` is `"manager"` sees everyone's calls; everyone else is a rep.
+- **Auth:** Clerk. Sign-ups are allow-listed to `@outsorcy.com`. Roles live in Clerk `publicMetadata.role`: rep (default), manager (sees everyone's calls), admin (also assigns roles at `/admin`).
 - **Storage:** Neon Postgres, one `calls` table (`db/schema.ts`).
 - **Stack:** Next.js App Router, TypeScript, Tailwind, Drizzle. Deploys to Render (`render.yaml`).
 
@@ -35,14 +35,18 @@ clerk config patch --json '{"auth_access_control":{"allowlist_enabled":true}}'
 clerk api /allowlist_identifiers -d '{"identifier":"*@outsorcy.com","notify":false}' --yes
 ```
 
-Make someone a manager (after they've signed up):
+Roles. Everyone starts as a **rep** (own calls only). A **manager** sees every rep's calls, the team history and team analytics. An **admin** has manager access plus the **People** page (`/admin`), where they assign roles to anyone who has signed in. The role is stored in the Clerk user's `publicMetadata.role`.
+
+Bootstrap the first admin once, after they have signed in:
 
 ```bash
 clerk users list
-clerk api -X PATCH /users/<user_id>/metadata -d '{"public_metadata":{"role":"manager"}}' --yes
+clerk api -X PATCH /users/<user_id>/metadata -d '{"public_metadata":{"role":"admin"}}' --yes
 ```
 
-They'll see the **Team** link and everyone's history on their next sign-in. The role travels in the session token (`sessionClaims.metadata.role`), so there's no per-request lookup.
+After that, roles are managed in the app. Nobody can change their own role, so there is always at least one admin.
+
+How the role reaches the app: with the session-claims patch above, `metadata.role` rides in the session token and costs nothing. Without it, `lib/auth.ts` falls back to one Clerk user lookup per request, so the app works either way; the claim is an optimisation. The patch needs a logged-in CLI (`clerk auth login`), or set it in the Clerk Dashboard under **Configure → Sessions → Customize session token** with `{"metadata": "{{user.public_metadata}}"}`. Role changes take effect on the user's next page load (next token refresh when the claim is on, about a minute).
 
 ### 4. Run
 
@@ -77,7 +81,7 @@ Run `pnpm drizzle-kit push` against production before deploying schema changes �
 
 ## Authorization model
 
-`lib/auth.ts` is the only place identity is read. Pages and server actions call `requireUser()` (redirects to `/sign-in`); route handlers call `apiUser()` (401). A rep can only open, start, or end their own call; a manager can open any call's results and the team history but never drives another rep's call. `proxy.ts` only establishes the session — every check happens at the resource.
+`lib/auth.ts` is the only place identity is read. Pages and server actions call `requireUser()` (redirects to `/sign-in`); route handlers call `apiUser()` (401). A rep can only open, start, or end their own call; a manager can open any call's results and the team history but never drives another rep's call; an admin can additionally change roles (`requireAdmin()`), never their own. `proxy.ts` only establishes the session — every check happens at the resource.
 
 ## Deploy
 
