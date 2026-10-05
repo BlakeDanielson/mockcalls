@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import Link from "next/link";
 import { outcomeLabel } from "@/components/ScorecardView";
 import { getDb } from "@/db";
@@ -16,11 +16,14 @@ export default async function HistoryPage(props: PageProps<"/history">) {
     viewer.isManager && typeof sp.rep === "string" && sp.rep ? sp.rep : null;
 
   const db = getDb();
+  // Rows still at `created` were never started (an abandoned picker visit or a
+  // double submit); there is nothing to show for them.
+  const notStarted = ne(calls.status, "created");
   const scope = viewer.isManager
     ? repFilter
-      ? eq(calls.userId, repFilter)
-      : undefined
-    : eq(calls.userId, viewer.userId);
+      ? and(eq(calls.userId, repFilter), notStarted)
+      : notStarted
+    : and(eq(calls.userId, viewer.userId), notStarted);
 
   const [rows, repRows] = await Promise.all([
     db.select().from(calls).where(scope).orderBy(desc(calls.createdAt)).limit(200),

@@ -2,8 +2,8 @@
 
 Cold-call practice for SDRs. Sign in, pick a prospect persona, talk to it over your headset, hang up, get a coaching scorecard. Reps see their own calls; managers see the whole team's.
 
-- **Voice:** one ElevenLabs agent; each persona overrides its prompt, opening line, and voice per call (`lib/personas.ts`).
-- **Scoring:** Claude reads the transcript and returns a structured scorecard (`lib/scoring.ts`).
+- **Voice:** one ElevenLabs agent; each persona overrides its prompt, opening line, voice, stability and speed per call (`lib/personas.ts`). The six active personas are Outsorcy's real buyers (a Head of Marketing, an EA gatekeeper, a Head of People, a founder on a freelancer budget, a CFO in a hiring freeze, a VP Sales burned by an SDR agency); the four original generic personas are retired but still resolve for old calls.
+- **Scoring:** Claude reads the transcript against an Outsorcy offering brief and returns a structured scorecard (`lib/scoring.ts`). Scoring runs in the background after the call ends (`lib/run-scoring.ts` `finalizeCall`): the ElevenLabs transcript is swapped in once processed (up to about 150 s), then the judge runs once; the results page polls until it lands.
 - **Auth:** Clerk. Sign-ups are allow-listed to `@outsorcy.com`. Roles live in Clerk `publicMetadata.role`: rep (default), manager (sees everyone's calls), admin (also assigns roles at `/admin`).
 - **Storage:** Neon Postgres, one `calls` table (`db/schema.ts`).
 - **Stack:** Next.js App Router, TypeScript, Tailwind, Drizzle. Deploys to Render (`render.yaml`).
@@ -14,9 +14,9 @@ Everything below is already provisioned for the Outsorcy workspace; the commands
 
 ### 1. ElevenLabs agent
 
-Agent **mockcalls prospect** exists with: LLM `claude-haiku-4-5`, TTS `eleven_flash_v2` (English agents require v2), temperature 0.7, authentication on, overrides enabled for system prompt / first message / voice id, client events `audio`, `interruption`, `user_transcript`, `agent_response`, `agent_response_correction`, and the `end_call` system tool. Its id goes in `ELEVENLABS_AGENT_ID`. ElevenLabs rejects a call that sends an override the agent hasn't enabled.
+Agent **mockcalls prospect** exists with: LLM `claude-sonnet-5-5`, TTS `eleven_v4_turbo`, temperature 0.6, max call duration 480 s, ASR keyword boosting for Outsorcy vocabulary (company, Kosovo, Pristina, SDR, BDR, the persona company names), authentication on, overrides enabled for system prompt / first message / voice id / stability / speed, client events `audio`, `interruption`, `user_transcript`, `agent_response`, `agent_response_correction`, the `end_call` system tool, and Privacy → store call audio on. Its id goes in `ELEVENLABS_AGENT_ID`. ElevenLabs rejects a call that sends an override the agent hasn't enabled.
 
-Persona voices are premade voice ids; swap any of them in `lib/personas.ts`.
+Persona voices are premade voice ids or designed voices saved in the workspace library (the plan's three custom-voice slots hold Priya, Tom and Marcus); swap any of them in `lib/personas.ts`.
 
 ### 2. Database
 
@@ -75,7 +75,11 @@ pnpm rescore                       # recompute metrics for recent calls (after a
 pnpm rescore --refetch --missing   # upgrade browser-transcript rows once ElevenLabs has processed them
 pnpm rescore --claude --id <uuid>  # re-run the judge for one call; add --dry-run to preview
 pnpm rescore --reasons             # see raw termination_reason strings; pin them in lib/metrics.ts EXACT
+pnpm judge fixtures/judge/*.json   # score the transcript fixtures and check expectations (needs ANTHROPIC_API_KEY)
+pnpm judge --runs 3 fixtures/judge/cfo-overpromise.json   # repeat to gauge judge variance
 ```
+
+Run the judge fixtures after any change to the coach prompt, the taxonomy or a persona: each fixture pins the expected outcome, tags, score floors or caps, and text the coaching must or must not contain.
 
 Run `pnpm drizzle-kit push` against production before deploying schema changes — the Render build never runs it.
 
@@ -91,4 +95,4 @@ The Clerk instance config is per instance, so repeat the three `clerk config pat
 
 ## Editing personas
 
-Everything about a prospect — who they are, how they talk, their objections, what a win looks like, their voice — is one object in `lib/personas.ts`.
+Everything about a prospect (who they are, how they talk, the research facts they confirm, their objections, how they react to Outsorcy's moves, what a win looks like, their voice) is one object in `lib/personas.ts`. `facts` are what a rep could have found before calling and are confirmed only when the rep states or asks about them; `reactions` say how the persona answers the burdened-cost reframe, the profiles offer, pause-the-clock, the Kosovo question and a crossed hard limit; `drill` tells the judge what the persona is for. `PERSONAS` is the picker in order (the first is pre-selected); `RETIRED_PERSONAS` keeps old ids resolvable for history and rescoring. `pnpm test` runs an integrity check (unique ids, facts and reactions present, no em dashes, voice ranges) and `pnpm judge` scores the fixtures in `fixtures/judge/`. The judge's offering brief lives in `lib/scoring.ts` (`OFFERING_BRIEF`); update it when pricing, proof points or hard limits change.

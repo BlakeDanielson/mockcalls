@@ -1,4 +1,5 @@
 import { DifficultyBadge } from "@/components/DifficultyBadge";
+import { SubmitButton } from "@/components/SubmitButton";
 import { displayName, requireUser } from "@/lib/auth";
 import { PERSONAS } from "@/lib/personas";
 import { createCall } from "./actions";
@@ -59,12 +60,12 @@ export default async function HomePage(props: PageProps<"/">) {
         <p className="text-sm text-red-600">Pick a prospect to call.</p>
       )}
 
-      <button
-        type="submit"
-        className="rounded-lg bg-zinc-900 px-5 py-2.5 font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+      <SubmitButton
+        pendingLabel="Starting…"
+        className="rounded-lg bg-zinc-900 px-5 py-2.5 font-medium text-white hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
       >
         Start the call →
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -1,0 +1,146 @@
+{
+  "personaId": "cfo-hiring-freeze",
+  "repName": "Arta Krasniqi",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Dana Whitfield.",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Dana, this is Arta from Outsorcy. I'm calling cold. I saw Corvid has two SDR roles posted at seventy-five to eighty-five OTE. For what one of those costs you loaded I can put two full-time SDRs on your team from our office. Can I take forty seconds to say how, and you decide?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "Where did you see that?",
+      "timeInCallSecs": 18,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "The postings are live on LinkedIn, about three weeks old. Are they real, or left over?",
+      "timeInCallSecs": 21
+    },
+    {
+      "role": "agent",
+      "message": "Approved for after the round. We're frozen until it closes. Call me in two months.",
+      "timeInCallSecs": 27,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "When does it close?",
+      "timeInCallSecs": 33
+    },
+    {
+      "role": "agent",
+      "message": "About six weeks.",
+      "timeInCallSecs": 35,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Then the timing is the reason to talk now, not later. From a brief to someone on the floor is four to five weeks for us, and nothing is committed until you choose a person. Start the search now and the two seats are producing the week the round closes instead of five months after. What did your last SDR cost you fully loaded?",
+      "timeInCallSecs": 37
+    },
+    {
+      "role": "agent",
+      "message": "About a hundred and ten. Gone in seven months.",
+      "timeInCallSecs": 58,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "So a hundred and ten for maybe two productive months after ramp. Our seat is about thirty-five hundred a month, so roughly forty-two a year, plus a one-time onboarding fee, and commission sits on top. The person is a full-time employee in our office in Pristina with a manager on the floor; you interview them and pick.",
+      "timeInCallSecs": 63
+    },
+    {
+      "role": "agent",
+      "message": "Thirty-five hundred is forty-two a year. Plus what, exactly, on the onboarding fee?",
+      "timeInCallSecs": 84,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "It's a one-time fee per hire; I'd rather Travis, our AE, give you the exact figure against your contract than have me round it. Fair?",
+      "timeInCallSecs": 90
+    },
+    {
+      "role": "agent",
+      "message": "Mm. Kosovo. Where is that, exactly, and why would I put pipeline in the hands of people there?",
+      "timeInCallSecs": 100,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Balkans, next to Albania and North Macedonia. Our office is in Pristina, the capital. The people are our full-time employees, we're the US employer of record, they work your hours, nine to five Eastern, and a manager on our floor reviews calls daily. A healthtech client of ours booked about two hundred and fifty qualified meetings in a quarter against a plan of a hundred with a team built this way. Travis can walk you through that account.",
+      "timeInCallSecs": 108
+    },
+    {
+      "role": "agent",
+      "message": "Numbers I can check?",
+      "timeInCallSecs": 135,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Yes, and he'll put you in touch. Twenty minutes with Travis, Thursday at eleven or Friday at nine Eastern. Which?",
+      "timeInCallSecs": 138
+    },
+    {
+      "role": "agent",
+      "message": "Thursday at eleven. Twenty minutes. Send the invite to d whitfield at corvidhealth dot com.",
+      "timeInCallSecs": 148,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Thursday at eleven Eastern, twenty minutes with Travis, invite to d whitfield at corvidhealth dot com. Thank you, Dana.",
+      "timeInCallSecs": 155
+    },
+    {
+      "role": "agent",
+      "message": "Okay.",
+      "timeInCallSecs": 162,
+      "interrupted": false
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "meeting_booked"
+    ],
+    "tagsInclude": [
+      "relevant_hook",
+      "permission_opener",
+      "objection_reframed",
+      "problem_question",
+      "burdened_cost_reframe",
+      "specific_time_ask"
+    ],
+    "tagsExclude": [
+      "fake_familiarity",
+      "pitched_before_discovery",
+      "overpromised",
+      "caved_on_objection"
+    ],
+    "min": {
+      "opener": 7,
+      "objectionHandling": 8,
+      "close": 8,
+      "overall": 8
+    },
+    "forbidText": [
+      "carrier",
+      "monthly close",
+      "finance tool",
+      "finance team",
+      "dashboard",
+      "software",
+      "certified",
+      "guarantee"
+    ]
+  }
+}

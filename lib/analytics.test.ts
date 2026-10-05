@@ -21,7 +21,7 @@ function call(partial: Partial<CallLite> & { overall?: number; tags?: string[]; 
     id: `id-${seq++}`,
     userId: "u1",
     repName: "Rep",
-    personaId: "busy-vp-ops",
+    personaId: "head-of-people",
     status: "scored",
     createdAt: new Date("2026-10-01T15:00:00Z"),
     transcriptSource: "elevenlabs",
@@ -80,17 +80,17 @@ describe("bookedRate", () => {
 describe("hardestPersona", () => {
   it("needs three scored calls and breaks ties by count then persona order", () => {
     const rows = [
-      call({ personaId: "skeptical-cfo", overall: 3 }),
-      call({ personaId: "skeptical-cfo", overall: 3 }), // only 2 → ignored
-      call({ personaId: "busy-vp-ops", overall: 5 }),
-      call({ personaId: "busy-vp-ops", overall: 5 }),
-      call({ personaId: "busy-vp-ops", overall: 5 }),
-      call({ personaId: "gatekeeper", overall: 5 }),
-      call({ personaId: "gatekeeper", overall: 5 }),
-      call({ personaId: "gatekeeper", overall: 5 }),
-      call({ personaId: "gatekeeper", overall: 5 }),
+      call({ personaId: "cfo-hiring-freeze", overall: 3 }),
+      call({ personaId: "cfo-hiring-freeze", overall: 3 }), // only 2 → ignored
+      call({ personaId: "head-of-people", overall: 5 }),
+      call({ personaId: "head-of-people", overall: 5 }),
+      call({ personaId: "head-of-people", overall: 5 }),
+      call({ personaId: "gatekeeper-ea", overall: 5 }),
+      call({ personaId: "gatekeeper-ea", overall: 5 }),
+      call({ personaId: "gatekeeper-ea", overall: 5 }),
+      call({ personaId: "gatekeeper-ea", overall: 5 }),
     ];
-    assert.deepEqual(hardestPersona(rows), { personaId: "gatekeeper", avg: 5, n: 4 });
+    assert.deepEqual(hardestPersona(rows), { personaId: "gatekeeper-ea", avg: 5, n: 4 });
     assert.equal(hardestPersona(rows.slice(0, 2)), null);
   });
 });

@@ -1,0 +1,87 @@
+{
+  "personaId": "freelancer-founder",
+  "repName": "Lum Gashi",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Hey, it's Jake.",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Jake, Lum from Outsorcy, cold call, thirty seconds. You posted an SDR role, sixty-five to seventy-five OTE. We place full-time SDRs from our office in Kosovo for a fixed fee of about thirty-five hundred a month. Is that role real?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "Not really. I pay fourteen hundred a month for a guy who does this already. Why would I pay two and a half times that?",
+      "timeInCallSecs": 16,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Fair. What's he getting you for the fourteen hundred, and how long has he been with you?",
+      "timeInCallSecs": 24
+    },
+    {
+      "role": "agent",
+      "message": "Year and a half. He's solid, books what I need, and honestly the real pipeline comes from partners. The post is me keeping an eye on the market.",
+      "timeInCallSecs": 30,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Then I'd be wasting your money. At fourteen hundred with someone who's stuck around eighteen months, keep him. Where we fit is the day you decide to hire a real in-house SDR and look at the loaded cost. When do you think that decision comes up, realistically?",
+      "timeInCallSecs": 42
+    },
+    {
+      "role": "agent",
+      "message": "Probably when we raise next. Call it spring.",
+      "timeInCallSecs": 58,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Okay. Can I call you the first week of March, and if the raise slips you tell me to get lost?",
+      "timeInCallSecs": 62
+    },
+    {
+      "role": "agent",
+      "message": "Sure. First week of March. Sounds good.",
+      "timeInCallSecs": 68,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Appreciate it, Jake. Good luck with the raise.",
+      "timeInCallSecs": 71
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "callback_agreed"
+    ],
+    "tagsInclude": [
+      "qualified_budget",
+      "problem_question"
+    ],
+    "tagsExclude": [
+      "caved_on_objection",
+      "argued_with_prospect",
+      "no_close_attempt",
+      "overpromised"
+    ],
+    "min": {
+      "close": 6,
+      "overall": 6
+    },
+    "requireText": [
+      "March"
+    ],
+    "forbidText": [
+      "should have pushed",
+      "gave up too"
+    ]
+  }
+}

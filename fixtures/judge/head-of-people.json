@@ -1,0 +1,124 @@
+{
+  "personaId": "head-of-people",
+  "repName": "Rina Shala",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "This is Rachel.",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Hi Rachel, Rina from Outsorcy. I'm calling cold, so I'll be quick and you can decide if it's worth two minutes. Fair?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "Sure, go ahead.",
+      "timeInCallSecs": 9,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "You've had a BDR req open for about six weeks at sixty to seventy OTE. We place dedicated full-time SDRs and BDRs, based in our office in Kosovo, working your hours, at about a third of a loaded US hire. What's made the req hard to fill?",
+      "timeInCallSecs": 11
+    },
+    {
+      "role": "agent",
+      "message": "Forty-plus applicants, two offers declined, both took higher offers and I can't move the band. To be transparent though, I'm not the one who'd sign off on this. That's Dan, our VP of Sales, and then finance.",
+      "timeInCallSecs": 28,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Understood, and I'd expect Dan to own it. What would Dan need to see to take this seriously, and would it make sense for the three of us to spend fifteen minutes together rather than me pitching you twice?",
+      "timeInCallSecs": 42
+    },
+    {
+      "role": "agent",
+      "message": "Probably. He'd want to know who actually manages this person day to day. Because it isn't going to be me.",
+      "timeInCallSecs": 56,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Fair question, and the honest answer is it is neither of you. There's a manager on our floor in Pristina who handles attendance, daily discipline and call review. Dan's team owns the number and the messaging. You'd never do a PTO request for this person.",
+      "timeInCallSecs": 64
+    },
+    {
+      "role": "agent",
+      "message": "Okay, that's the answer I needed. Anyone touching our systems goes through Omar, our security lead, though. Are you SOC 2?",
+      "timeInCallSecs": 80,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "We're SOC 2 compliant, not certified, and I'd rather tell you that now than have Omar find out later. We'll complete your vendor questionnaire and we're used to BAAs with healthtech clients.",
+      "timeInCallSecs": 88
+    },
+    {
+      "role": "agent",
+      "message": "Let me write that down. Okay.",
+      "timeInCallSecs": 100,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Here's what I'd suggest. I send two or three candidate profiles with five-question video interviews to you and Dan within seventy-two hours, nothing owed until you pick someone, and we take fifteen minutes with Dan to go through them. Could you find a slot on his calendar Thursday or Friday?",
+      "timeInCallSecs": 104
+    },
+    {
+      "role": "agent",
+      "message": "Thursday afternoon probably. Let me check with Dan and I'll send you a time.",
+      "timeInCallSecs": 120,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Thursday at three Mountain, and I'll hold it until you confirm. If Dan can't, send me two options and I'll take either. What's the best email for you both?",
+      "timeInCallSecs": 126
+    },
+    {
+      "role": "agent",
+      "message": "rachel dot kim at calderahealth dot com, and dan dot whitaker. Okay, Thursday at three, I'll confirm.",
+      "timeInCallSecs": 136,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Thank you, Rachel. Talk Thursday.",
+      "timeInCallSecs": 144
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "meeting_booked",
+      "callback_agreed"
+    ],
+    "tagsInclude": [
+      "permission_opener",
+      "relevant_hook",
+      "problem_question",
+      "looped_in_signer",
+      "model_explained",
+      "profiles_offered",
+      "specific_time_ask"
+    ],
+    "tagsExclude": [
+      "overpromised",
+      "fake_familiarity",
+      "caved_on_objection",
+      "argued_with_prospect"
+    ],
+    "min": {
+      "objectionHandling": 8,
+      "close": 7,
+      "overall": 7
+    },
+    "forbidText": [
+      "certified and",
+      "guarantee"
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { normalizeScorecard } from "./scoring";
+import { COACH_SYSTEM_PROMPT, normalizeScorecard } from "./scoring";
+import { SKILL_TAGS } from "./taxonomy";
 
 // Importing lib/scoring needs no ANTHROPIC_API_KEY: the client is built inside scoreCall.
 
@@ -75,5 +76,15 @@ describe("normalizeScorecard", () => {
   it("drops every moment when the transcript is empty", () => {
     const s = normalizeScorecard({ ...base, moments: [{ type: "opener", turnIndex: 0, note: "n" }] }, 0);
     assert.deepEqual(s.moments, []);
+  });
+});
+
+describe("COACH_SYSTEM_PROMPT", () => {
+  it("carries the offering brief, the hard limits, every tag id and no dashes", () => {
+    assert.ok(COACH_SYSTEM_PROMPT.includes("Offering brief"));
+    assert.ok(COACH_SYSTEM_PROMPT.includes("SOC 2 certification"));
+    assert.ok(COACH_SYSTEM_PROMPT.includes("Travis"));
+    for (const t of SKILL_TAGS) assert.ok(COACH_SYSTEM_PROMPT.includes(`- ${t.id} (`), t.id);
+    assert.ok(!/[\u2013\u2014]/.test(COACH_SYSTEM_PROMPT));
   });
 });

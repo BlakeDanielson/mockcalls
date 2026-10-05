@@ -5,8 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TranscriptEntry } from "@/db/schema";
-import { formatClock, stripDeliveryTags } from "@/lib/format";
+import { formatClock } from "@/lib/format";
 import type { Persona, SessionOverrides } from "@/lib/personas";
+import {
+  appendLine,
+  applyAgentCorrection,
+  markLastAgentInterrupted,
+} from "@/lib/transcript";
 import { DifficultyBadge } from "./DifficultyBadge";
 import { TranscriptView } from "./TranscriptView";
 
@@ -42,23 +47,14 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
   const starting = useRef(false);
   const ending = useRef(false);
   const lines = useRef<TranscriptEntry[]>([]);
-  const seenEventIds = useRef(new Set<number>());
   const finishRef = useRef<() => void>(() => {});
   const endedBy = useRef<"user" | "agent" | "error">("user");
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // The SDK's interruption/correction events always concern the prospect line
-  // currently being spoken, i.e. the most recent agent entry.
-  const patchLastAgentLine = (
-    patch: (e: TranscriptEntry) => TranscriptEntry | null,
-  ) => {
-    const idx = lines.current.map((e) => e.role).lastIndexOf("agent");
-    if (idx < 0) return;
-    const next = patch(lines.current[idx]);
-    lines.current = next
-      ? lines.current.map((e, i) => (i === idx ? next : e))
-      : lines.current.filter((_, i) => i !== idx);
-    setTranscript(lines.current);
+  const setLines = (next: TranscriptEntry[]) => {
+    if (next === lines.current) return;
+    lines.current = next;
+    setTranscript(next);
   };
 
   const conversation = useConversation({
@@ -67,35 +63,18 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       startedAt.current = Date.now();
       setPhase("live");
     },
-    onMessage: ({ message, role, event_id }) => {
-      const text = stripDeliveryTags(message);
-      if (!text) return;
-      if (event_id !== undefined) {
-        if (seenEventIds.current.has(event_id)) return;
-        seenEventIds.current.add(event_id);
-      }
-      // Tentative and final user transcripts can arrive as separate events.
-      const last = lines.current.at(-1);
-      if (last && last.role === role && last.message === text) return;
-      lines.current = [
-        ...lines.current,
-        {
-          role,
-          message: text,
-          timeInCallSecs: Math.round(secondsSince(startedAt.current)),
-          // explicit false on prospect lines so "0 interruptions" is distinguishable from "unknown"
-          ...(role === "agent" ? { interrupted: false } : {}),
-        },
-      ];
-      setTranscript(lines.current);
+    // No event-id dedupe here: the agent's reply carries the same event_id as
+    // the user turn that triggered it (see lib/transcript.ts).
+    onMessage: ({ message, role }) => {
+      setLines(
+        appendLine(lines.current, role, message, Math.round(secondsSince(startedAt.current))),
+      );
     },
     onInterruption: () => {
-      patchLastAgentLine((e) => ({ ...e, interrupted: true }));
+      setLines(markLastAgentInterrupted(lines.current));
     },
     onAgentResponseCorrection: ({ corrected_agent_response }) => {
-      // agent_response carried the full planned reply; keep only what was actually said.
-      const text = corrected_agent_response.trim();
-      patchLastAgentLine((e) => (text ? { ...e, message: text } : null));
+      setLines(applyAgentCorrection(lines.current, corrected_agent_response));
     },
     onDisconnect: (details) => {
       // "user" means we hung up ourselves and finish() is already running.
@@ -267,9 +246,7 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
 
       {(phase === "ending" || phase === "scoring") && (
         <div className="rounded-xl border border-zinc-200 p-4 text-center text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-          {phase === "ending"
-            ? "Hanging up…"
-            : "Call saved. Scoring it now — this takes under a minute…"}
+          {phase === "ending" ? "Hanging up…" : "Call saved. Opening your results…"}
         </div>
       )}
 

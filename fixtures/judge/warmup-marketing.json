@@ -1,0 +1,116 @@
+{
+  "personaId": "warmup-marketing",
+  "repName": "Era Hoxha",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Hi, this is Priya!",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Hi Priya, this is Era calling from Outsourcy. I know this is out of the blue, do you have thirty seconds and then you can tell me to get lost?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "Oh, sure, totally. Go ahead.",
+      "timeInCallSecs": 8,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "I saw Loomward has had a marketing operations role open for about three weeks, sixty to seventy thousand. We place dedicated full-time marketing ops people who work your hours from our office, at about a third of that fully loaded. Before I say anything else, how is the search going?",
+      "timeInCallSecs": 10
+    },
+    {
+      "role": "agent",
+      "message": "Honestly, slow. We've interviewed two people and neither was great, so, yeah. And I'm in the middle of a website relaunch so it keeps slipping.",
+      "timeInCallSecs": 25,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Two interviews in three weeks while you're relaunching the site. What's falling on you in the meantime, the HubSpot side or the reporting?",
+      "timeInCallSecs": 36
+    },
+    {
+      "role": "agent",
+      "message": "Both! The workflows, the webinar follow-up, and Sam wants a report every Monday. My content person is amazing at writing and not an ops person, so it's me at night.",
+      "timeInCallSecs": 46,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "That is exactly the seat we fill. One person, full time, only Loomward, working nine to five Eastern from our office in Pristina with a manager on the floor. You interview them and pick. The way we start is simple: give me a ten-minute brief and in about seventy-two hours you get two or three profiles with short video interviews. Nothing owed until you choose someone.",
+      "timeInCallSecs": 58
+    },
+    {
+      "role": "agent",
+      "message": "Oh that sounds amazing, honestly. I'd probably have to run it by Sam though. Could you send me some info?",
+      "timeInCallSecs": 80,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Of course, and I'll make it easy for Sam. Let's do this: I send the profiles by Thursday, and you and I take fifteen minutes Friday to go through them, and if you want Sam on it I'll put him on the invite. Friday at ten or at two, which is better?",
+      "timeInCallSecs": 88
+    },
+    {
+      "role": "agent",
+      "message": "Um, Friday at two works. And yeah, add Sam, that's probably smart.",
+      "timeInCallSecs": 104,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Friday at two Eastern, fifteen minutes, you and Sam, profiles in your inbox Thursday. What's the best email for the invite?",
+      "timeInCallSecs": 110
+    },
+    {
+      "role": "agent",
+      "message": "priya at loomward dot com. This is great, thank you!",
+      "timeInCallSecs": 120,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Perfect. Talk Friday, Priya.",
+      "timeInCallSecs": 126
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "meeting_booked"
+    ],
+    "tagsInclude": [
+      "permission_opener",
+      "relevant_hook",
+      "problem_question",
+      "built_on_answer",
+      "profiles_offered",
+      "specific_time_ask",
+      "looped_in_signer"
+    ],
+    "tagsExclude": [
+      "fake_familiarity",
+      "pitched_before_discovery",
+      "caved_on_objection",
+      "no_close_attempt",
+      "overpromised"
+    ],
+    "min": {
+      "opener": 7,
+      "discovery": 7,
+      "close": 8,
+      "overall": 7
+    },
+    "forbidText": [
+      "spelling",
+      "pronunc",
+      "certified",
+      "guarantee"
+    ]
+  }
+}

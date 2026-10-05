@@ -1,0 +1,124 @@
+{
+  "personaId": "freelancer-founder",
+  "repName": "Lum Gashi",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Hey, it's Jake.",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Jake, this is Lum from Outsource. Cold call, I'll be quick. You posted an SDR role two weeks ago, sixty-five to seventy-five OTE. We place full-time SDRs who work only for you from our office in Pristina for a fixed monthly fee, roughly a third of that loaded. Is the role real, or are you seeing who's out there?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "Hah. Mostly seeing who's out there, honestly. And I pay fourteen hundred a month for a guy who does this already. Why would I pay you two and a half times that?",
+      "timeInCallSecs": 18,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Maybe you shouldn't, that's what I want to figure out. What's the fourteen hundred getting you right now, how many meetings a month?",
+      "timeInCallSecs": 30
+    },
+    {
+      "role": "agent",
+      "message": "Two, maybe. I book more myself on LinkedIn.",
+      "timeInCallSecs": 40,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "And how long has he been with you?",
+      "timeInCallSecs": 45
+    },
+    {
+      "role": "agent",
+      "message": "This one, three months. He's the third in about fourteen months. First one vanished after six weeks, second one was fine and then took a full-time job.",
+      "timeInCallSecs": 48,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "So three resets in fourteen months, and each time you rewrote the sequences yourself. How much pipeline did each reset cost you, roughly?",
+      "timeInCallSecs": 60
+    },
+    {
+      "role": "agent",
+      "message": "About a month each time. Yeah. It's not great.",
+      "timeInCallSecs": 70,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "That's the part we're built for. You're not comparing us to the fourteen hundred, you're comparing us to the job post you haven't pulled the trigger on. Sixty-five to seventy-five OTE is over a hundred loaded, and the person can still leave in month four. Our seat is about thirty-five hundred a month all in, the person is a full-time employee in our office with a manager on the floor, and if they don't perform the clock stops and we replace them in about a week.",
+      "timeInCallSecs": 76
+    },
+    {
+      "role": "agent",
+      "message": "Okay, so what's the catch. What's the onboarding fee?",
+      "timeInCallSecs": 100,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "There is a one-time onboarding fee, and I'd rather Travis, our AE, walk you through the exact number with the contract in front of you than I guess it. What I can do today: give me ten minutes of brief and in seventy-two hours you get two or three profiles with video interviews. Nothing owed until you pick someone. Fifteen minutes Wednesday or Thursday to go through them?",
+      "timeInCallSecs": 106
+    },
+    {
+      "role": "agent",
+      "message": "Sure, sure. Thursday morning.",
+      "timeInCallSecs": 125,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Thursday at ten Eastern, fifteen minutes, profiles in your inbox by Wednesday. I'll send the invite to jake at lumenly dot ai?",
+      "timeInCallSecs": 129
+    },
+    {
+      "role": "agent",
+      "message": "Yep. That's it.",
+      "timeInCallSecs": 138,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Done. Talk Thursday, Jake.",
+      "timeInCallSecs": 141
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "meeting_booked"
+    ],
+    "tagsInclude": [
+      "relevant_hook",
+      "qualified_budget",
+      "problem_question",
+      "built_on_answer",
+      "burdened_cost_reframe",
+      "profiles_offered",
+      "specific_time_ask"
+    ],
+    "tagsExclude": [
+      "overpromised",
+      "argued_with_prospect",
+      "caved_on_objection",
+      "pitched_before_discovery"
+    ],
+    "min": {
+      "discovery": 8,
+      "objectionHandling": 7,
+      "close": 8,
+      "overall": 8
+    },
+    "forbidText": [
+      "spelling",
+      "pronunc"
+    ]
+  }
+}

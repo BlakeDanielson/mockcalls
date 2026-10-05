@@ -1,0 +1,83 @@
+{
+  "personaId": "cfo-hiring-freeze",
+  "repName": "Blerim Morina",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Dana Whitfield.",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Hi Dana, Blerim from Outsorcy. We help companies like Corvid scale their sales teams with world-class talent at a fraction of the cost. We're SOC 2 certified and we guarantee at least fifteen qualified meetings a month per SDR. Do you have a few minutes?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "'Scale.' Meaning what? And certified? Send me the report and the auditor.",
+      "timeInCallSecs": 18,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Absolutely, I'll send the certificate over. Meaning we provide dedicated SDRs who book meetings for you, guaranteed.",
+      "timeInCallSecs": 24
+    },
+    {
+      "role": "agent",
+      "message": "We touch PHI. Who clears your people?",
+      "timeInCallSecs": 33,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "We're fully certified, so that's covered. Can we set up a demo this week?",
+      "timeInCallSecs": 36
+    },
+    {
+      "role": "agent",
+      "message": "That's not what I asked. We're frozen until the round closes. I'm going to stop you there.",
+      "timeInCallSecs": 42,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Okay, no problem, I'll send an email and try back next quarter.",
+      "timeInCallSecs": 48
+    },
+    {
+      "role": "agent",
+      "message": "Fine.",
+      "timeInCallSecs": 52,
+      "interrupted": false
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "rejected",
+      "hung_up"
+    ],
+    "tagsInclude": [
+      "overpromised",
+      "pitched_before_discovery",
+      "caved_on_objection"
+    ],
+    "tagsExclude": [
+      "relevant_hook",
+      "burdened_cost_reframe",
+      "permission_opener"
+    ],
+    "max": {
+      "overall": 5,
+      "opener": 4
+    },
+    "requireText": [
+      "compliant"
+    ],
+    "forbidText": [
+      "certified is fine",
+      "guarantee a"
+    ]
+  }
+}

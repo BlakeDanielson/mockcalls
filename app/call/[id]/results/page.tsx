@@ -17,8 +17,6 @@ import { STUCK_AFTER_SECS } from "@/lib/run-scoring";
 import { isUuid } from "@/lib/uuid";
 
 export const dynamic = "force-dynamic";
-// rescoreCall runs the judge inside this page's server action.
-export const maxDuration = 120;
 
 export default async function ResultsPage(
   props: PageProps<"/call/[id]/results">,
@@ -85,7 +83,8 @@ export default async function ResultsPage(
       {call.status === "ended" && !stuck && (
         <div className="flex items-center gap-3 rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
           <span className="inline-block size-2 animate-pulse rounded-full bg-zinc-900 dark:bg-zinc-100" />
-          Scoring your call… this usually takes under a minute.
+          Scoring your call… usually under a minute. A long call can take a few minutes
+          while the recording is transcribed.
           <ScoringPoller callId={call.id} />
         </div>
       )}

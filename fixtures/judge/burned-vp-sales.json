@@ -1,0 +1,122 @@
+{
+  "personaId": "burned-vp-sales",
+  "repName": "Dren Berisha",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Yeah, this is Marcus. Who's this?",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Marcus, Dren from Outsorcy. Cold call. You've got two SDR reqs open at seventy to eighty OTE and I place full-time SDRs who work only for you from our office. Thirty seconds to say why this isn't the agency thing most VPs in cyber have been burned by?",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "We did the outsourced SDR thing last year. It was a disaster. Why would this be different?",
+      "timeInCallSecs": 15,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Tell me what broke first, the reps, the messaging or the management?",
+      "timeInCallSecs": 21
+    },
+    {
+      "role": "agent",
+      "message": "All of it. Three 'dedicated' reps who turned out shared. Fourteen meetings in four months, three qualified. Messaging drifted off the CISO persona in a month and nobody over there was managing them.",
+      "timeInCallSecs": 27,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Shared reps, drift, nobody on the floor. That's the agency model and it fails the same way every time. Here's the difference, concretely: you interview and pick one person, they're our full-time employee, they work only Northwind's book, nine to five Eastern, on your tools and your messaging, from our office in Pristina where a manager reviews their calls every day. No shared seats. We don't write your messaging and we don't sell meetings.",
+      "timeInCallSecs": 43
+    },
+    {
+      "role": "agent",
+      "message": "Okay, keep going. What happens when the guy's bad? Because he will be.",
+      "timeInCallSecs": 69,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Then the billing clock stops and we replace him in about a week. What we won't do is pay per meeting; that's the incentive that got you shared reps.",
+      "timeInCallSecs": 74
+    },
+    {
+      "role": "agent",
+      "message": "My buyers are CISOs. The second they hear a call-centre accent they hang up.",
+      "timeInCallSecs": 85,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Which is why you hear them before anyone starts. Five-question video interviews on every profile, then a live interview with you. If they can't hold a conversation with you, they never get near a CISO. Have you sold into security with offshore reps before, or is this the first time?",
+      "timeInCallSecs": 90
+    },
+    {
+      "role": "agent",
+      "message": "First time. Name one security company you've done this for.",
+      "timeInCallSecs": 109,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Most of our named references are healthtech, like a client that booked about two hundred and fifty qualified meetings in a quarter against a plan of a hundred. For security specifically, I'd rather Travis, our AE, show you the accounts than have me name-drop. Twenty minutes with him Thursday at two or Friday at ten?",
+      "timeInCallSecs": 113
+    },
+    {
+      "role": "agent",
+      "message": "Friday at ten. And I want profiles of people who've sold to technical buyers, not generic.",
+      "timeInCallSecs": 133,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Friday at ten Eastern with Travis, and I'll have two or three profiles of reps with technical-buyer experience in your inbox before then. Best email?",
+      "timeInCallSecs": 139
+    },
+    {
+      "role": "agent",
+      "message": "m reyes at northwindsecurity dot com.",
+      "timeInCallSecs": 149,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Got it. Friday at ten, Marcus.",
+      "timeInCallSecs": 153
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "meeting_booked"
+    ],
+    "tagsInclude": [
+      "relevant_hook",
+      "problem_question",
+      "built_on_answer",
+      "model_explained",
+      "objection_reframed",
+      "specific_time_ask"
+    ],
+    "tagsExclude": [
+      "overpromised",
+      "argued_with_prospect",
+      "fake_familiarity",
+      "caved_on_objection"
+    ],
+    "min": {
+      "objectionHandling": 8,
+      "close": 8,
+      "overall": 8
+    },
+    "forbidText": [
+      "guarantee",
+      "certified"
+    ]
+  }
+}

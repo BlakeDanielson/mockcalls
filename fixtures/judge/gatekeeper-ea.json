@@ -1,0 +1,99 @@
+{
+  "personaId": "gatekeeper-ea",
+  "repName": "Dren Berisha",
+  "transcript": [
+    {
+      "role": "agent",
+      "message": "Elena Marsh's office, this is Tom.",
+      "timeInCallSecs": 0,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Hi Tom, this is Dren from Outsorcy. Full disclosure, this is a cold call, and I'm hoping you can point me in the right direction.",
+      "timeInCallSecs": 2
+    },
+    {
+      "role": "agent",
+      "message": "Is she expecting your call?",
+      "timeInCallSecs": 9,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "No, she isn't. And I'm not going to pretend otherwise.",
+      "timeInCallSecs": 11
+    },
+    {
+      "role": "agent",
+      "message": "I understand. What is this regarding?",
+      "timeInCallSecs": 14,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "We place dedicated full-time SDRs who work from our own office for companies like Pinecrest. I saw you posted an SDR role two weeks ago. I don't think Elena is the right person for this. Who owns SDR hiring over there, and how do they prefer to be reached?",
+      "timeInCallSecs": 16
+    },
+    {
+      "role": "agent",
+      "message": "That would be Dev Patel, our VP of Sales. Are you a recruiting agency? Agencies go through careers at.",
+      "timeInCallSecs": 34,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Not a recruiter. The person stays employed by us and works only for Pinecrest, full time, on your hours. Dev would be the one to judge that. What's the best way to reach him, email or phone?",
+      "timeInCallSecs": 40
+    },
+    {
+      "role": "agent",
+      "message": "Email is better. First name dot last name at pinecrestcyber dot com. He takes outside calls Tuesday and Thursday afternoons.",
+      "timeInCallSecs": 55,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "Dev dot Patel at pinecrestcyber dot com, Tuesday or Thursday afternoon. If I call Thursday around two, is there anything you'd suggest I lead with?",
+      "timeInCallSecs": 63
+    },
+    {
+      "role": "agent",
+      "message": "Mention the open SDR role. He's been fairly vocal that recruiting for it is slow.",
+      "timeInCallSecs": 72,
+      "interrupted": false
+    },
+    {
+      "role": "user",
+      "message": "That's really helpful, Tom. Thank you. Have a good one.",
+      "timeInCallSecs": 78
+    },
+    {
+      "role": "agent",
+      "message": "You too. Goodbye.",
+      "timeInCallSecs": 82,
+      "interrupted": false
+    }
+  ],
+  "expect": {
+    "outcome": [
+      "callback_agreed"
+    ],
+    "tagsInclude": [
+      "relevant_hook",
+      "specific_time_ask",
+      "built_on_answer"
+    ],
+    "tagsExclude": [
+      "fake_familiarity",
+      "pitched_before_discovery",
+      "no_close_attempt",
+      "overpromised"
+    ],
+    "min": {
+      "opener": 7,
+      "close": 7,
+      "overall": 7
+    }
+  }
+}

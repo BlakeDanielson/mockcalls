@@ -1,11 +1,11 @@
 import { and, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { calls, type TranscriptEntry } from "@/db/schema";
 import { apiUser } from "@/lib/auth";
-import { toTranscript, waitForDone } from "@/lib/elevenlabs";
-import { mapTerminationReason } from "@/lib/metrics";
-import { runScoring } from "@/lib/run-scoring";
+import { computeMetrics } from "@/lib/metrics";
+import { finalizeCall } from "@/lib/run-scoring";
 import { isUuid } from "@/lib/uuid";
 
 const Body = z.object({
@@ -21,9 +21,6 @@ const Body = z.object({
   /** The browser's disconnect reason: who hung up, as far as the client can tell. */
   endedBy: z.enum(["user", "agent", "error"]).optional(),
 });
-
-// ElevenLabs polling (up to 15 s) plus the Claude judge run inside this request.
-export const maxDuration = 120;
 
 export async function POST(
   req: Request,
@@ -43,24 +40,30 @@ export async function POST(
   // Save what the browser heard right away so nothing is lost if the rest fails.
   // The `client:` prefix records that this reason came from the browser.
   const clientHint = body.data.endedBy ? `client:${body.data.endedBy}` : null;
-  let transcript: TranscriptEntry[] = body.data.transcript;
-  let transcriptSource: "client" | "elevenlabs" = "client";
-  let durationSecs = body.data.durationSecs;
-  let terminationReason: string | null = clientHint;
+  const transcript: TranscriptEntry[] = body.data.transcript;
+  const durationSecs = body.data.durationSecs;
 
   // One atomic claim: only the request that moves the row from in_call to
-  // ended goes on to fetch the transcript and score. A second submit (agent
-  // hang-up racing the End button, or "Retry save" after a client timeout)
-  // matches zero rows and just reports the current status. Only the owning
-  // rep can end their call, and a call that never started has nothing to score.
+  // ended goes on to finalize and score. A second submit (agent hang-up racing
+  // the End button, or "Retry save" after a client timeout) matches zero rows
+  // and just reports the current status. Only the owning rep can end their
+  // call, and a call that never started has nothing to score. Client-source
+  // metrics are written in the same statement so "By the numbers" renders
+  // while the judge is still running.
   const db = getDb();
   const [call] = await db
     .update(calls)
     .set({
       transcript,
-      transcriptSource,
+      transcriptSource: "client",
       durationSecs,
-      terminationReason,
+      terminationReason: clientHint,
+      metrics: computeMetrics({
+        transcript,
+        durationSecs,
+        terminationReason: clientHint,
+        source: "client",
+      }),
       status: "ended",
       endedAt: new Date(),
     })
@@ -90,38 +93,21 @@ export async function POST(
     return Response.json({ status: existing.status });
   }
 
-  // Prefer ElevenLabs' own transcript (real timestamps, interruption flags,
-  // nothing missed) once it has finished processing; keep the client copy if
-  // it doesn't show up in time.
-  if (call.elevenlabsConversationId) {
-    const convo = await waitForDone(call.elevenlabsConversationId).catch(
-      (err) => {
-        console.error(`[end] call ${id}: transcript fetch failed`, err);
-        return null;
-      },
-    );
-    const serverTranscript = convo ? toTranscript(convo) : [];
-    if (convo && serverTranscript.length > 0) {
-      transcript = serverTranscript;
-      transcriptSource = "elevenlabs";
-      durationSecs = convo.metadata?.call_duration_secs ?? durationSecs;
-      terminationReason = convo.metadata?.termination_reason ?? clientHint;
-      console.log(
-        `[end] call ${id} termination_reason=${terminationReason ?? "null"} endedBy=${mapTerminationReason(terminationReason)}`,
-      );
-      await db
-        .update(calls)
-        .set({ transcript, transcriptSource, durationSecs, terminationReason })
-        .where(eq(calls.id, id));
-    }
-  }
+  // A one-sided client transcript is the signature of the onMessage dedupe
+  // bug; keep it visible in the logs.
+  const userLines = transcript.filter((e) => e.role === "user").length;
+  const agentLines = transcript.filter((e) => e.role === "agent").length;
+  const line = `[end] call ${id} client transcript user=${userLines} agent=${agentLines} duration=${durationSecs}s endedBy=${clientHint ?? "null"}`;
+  if (agentLines === 0 && userLines >= 3) console.warn(`${line} (no prospect lines!)`);
+  else console.log(line);
 
-  const status = await runScoring({
-    ...call,
-    transcript,
-    transcriptSource,
-    durationSecs,
-    terminationReason,
-  });
-  return Response.json({ status });
+  // The ElevenLabs transcript takes a minute or two to process after a long
+  // call and the judge another 20 to 40 s. Both happen after this response;
+  // the results page polls until the row leaves `ended`.
+  after(() =>
+    finalizeCall(call).catch((err) =>
+      console.error(`[finalize] call ${id} crashed`, err),
+    ),
+  );
+  return Response.json({ status: "ended" });
 }

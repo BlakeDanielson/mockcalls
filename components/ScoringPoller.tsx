@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const INTERVAL_MS = 3000;
-/** ~2 minutes, past the results page's stuck threshold, after which the page
- *  re-renders with the "try again" form instead of the spinner. */
-const MAX_POLLS = 40;
+/** ~6.5 minutes, past STUCK_AFTER_SECS in lib/run-scoring.ts (not imported:
+ *  that module pulls the database driver into the client bundle), after which
+ *  the page re-renders with the "try again" form instead of the spinner. */
+const MAX_POLLS = 130;
 
 /** Refreshes the results page once scoring lands. Renders nothing. */
 export function ScoringPoller({ callId }: { callId: string }) {
