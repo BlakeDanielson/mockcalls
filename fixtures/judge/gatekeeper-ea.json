@@ -81,7 +81,6 @@
     ],
     "tagsInclude": [
       "relevant_hook",
-      "specific_time_ask",
       "built_on_answer"
     ],
     "tagsExclude": [

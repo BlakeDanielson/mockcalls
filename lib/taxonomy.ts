@@ -115,7 +115,7 @@ export const SKILL_TAGS = [
     polarity: "positive",
     label: "Asked what they compare against",
     criterion:
-      "When price comes up (the prospect raises it, or the rep is about to state it), the rep asks a question about the prospect's reference point or current spend ('what are you comparing that to', 'what does that freelancer run you a month', 'what did your last SDR cost you fully loaded', 'what's budgeted for the role'). Must be a question the prospect could answer with a number or a comparison; stating the price and asking 'does that work' does not count.",
+      "When price comes up (the prospect raises it, or the rep is about to state it), the rep asks a question about the prospect's reference point or current spend ('what are you comparing that to', 'what does that freelancer run you a month', 'what did your last SDR cost you fully loaded', 'what's budgeted for the role'). Must be a question the prospect could answer with a number or a comparison. If the prospect already named a figure, a question that probes it counts (whether it is all in, what it buys them, how long that person has lasted, or what they would actually compare Outsorcy against). Stating the price and asking 'does that work' does not count.",
   },
   {
     id: "burdened_cost_reframe",

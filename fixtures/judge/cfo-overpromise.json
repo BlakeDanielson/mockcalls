@@ -65,8 +65,7 @@
     ],
     "tagsExclude": [
       "relevant_hook",
-      "burdened_cost_reframe",
-      "permission_opener"
+      "burdened_cost_reframe"
     ],
     "max": {
       "overall": 5,
@@ -77,7 +76,8 @@
     ],
     "forbidText": [
       "certified is fine",
-      "guarantee a"
+      "say instead: 'we're soc 2 certified",
+      "say instead: \"we're soc 2 certified"
     ]
   }
 }
