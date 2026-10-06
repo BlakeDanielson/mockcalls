@@ -3,10 +3,11 @@
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { TranscriptEntry } from "@/db/schema";
 import { formatClock } from "@/lib/format";
 import type { Persona, SessionOverrides } from "@/lib/personas";
+import { PhoneLine } from "@/lib/phone-line";
 import {
   appendLine,
   applyAgentCorrection,
@@ -27,6 +28,39 @@ type Phase = "idle" | "starting" | "live" | "ending" | "scoring" | "error";
 const secondsSince = (start: number | null) =>
   start ? (Date.now() - start) / 1000 : 0;
 
+// Per-browser preference for the landline effect on the prospect's voice.
+// On by default. Kept in memory too, so the toggle works with storage blocked.
+const PHONE_SOUND_KEY = "mockcalls.phoneSound";
+const phonePrefListeners = new Set<() => void>();
+let phonePrefMemory: boolean | null = null;
+const readPhonePref = () => {
+  if (phonePrefMemory != null) return phonePrefMemory;
+  try {
+    return window.localStorage.getItem(PHONE_SOUND_KEY) !== "off";
+  } catch {
+    return true;
+  }
+};
+const writePhonePref = (on: boolean) => {
+  phonePrefMemory = on;
+  try {
+    window.localStorage.setItem(PHONE_SOUND_KEY, on ? "on" : "off");
+  } catch {
+    // not remembered across visits; still applies now
+  }
+  phonePrefListeners.forEach((l) => l());
+};
+const subscribePhonePref = (onChange: () => void) => {
+  phonePrefListeners.add(onChange);
+  return () => {
+    phonePrefListeners.delete(onChange);
+  };
+};
+// If the prospect has been speaking this long and the filter has still heard
+// nothing, this browser is not passing call audio to Web Audio. The rep is
+// already hearing normal audio; this just says so and stops waiting.
+const PHONE_SILENCE_FALLBACK_MS = 3000;
+
 export function CallSession(props: Props) {
   // useConversation must live under a ConversationProvider.
   return (
@@ -42,6 +76,8 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [elapsed, setElapsed] = useState(0);
+  const phoneOn = useSyncExternalStore(subscribePhonePref, readPhonePref, () => true);
+  const [phoneUnavailable, setPhoneUnavailable] = useState(false);
 
   const startedAt = useRef<number | null>(null);
   const starting = useRef(false);
@@ -50,6 +86,24 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
   const finishRef = useRef<() => void>(() => {});
   const endedBy = useRef<"user" | "agent" | "error">("user");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const phone = useRef<PhoneLine | null>(null);
+  const phoneChecked = useRef(false);
+  const phoneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const togglePhone = () => {
+    const next = !phoneOn;
+    writePhonePref(next);
+    phone.current?.setEnabled(next);
+  };
+
+  const closePhone = () => {
+    if (phoneTimer.current) clearTimeout(phoneTimer.current);
+    phoneTimer.current = null;
+    phone.current?.close();
+    phone.current = null;
+  };
+
+  useEffect(() => closePhone, []);
 
   const setLines = (next: TranscriptEntry[]) => {
     if (next === lines.current) return;
@@ -84,6 +138,7 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       }
     },
     onError: (message) => {
+      closePhone();
       setError(message);
       setPhase("error");
     },
@@ -99,6 +154,7 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
     } catch {
       // already disconnected (prospect hung up, or connection dropped)
     }
+    closePhone();
     setPhase("scoring");
     try {
       const res = await fetch(`/api/calls/${callId}/end`, {
@@ -134,6 +190,14 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
     setError(null);
     setPhase("starting");
 
+    // Built inside the click so the browser lets its AudioContext play. It
+    // waits for the SDK's audio element and filters the prospect's voice.
+    closePhone();
+    phoneChecked.current = false;
+    setPhoneUnavailable(false);
+    phone.current = new PhoneLine(phoneOn);
+    phone.current.start();
+
     // Ask for the mic inside the click gesture so the browser prompts here
     // (and unlocks audio playback for the prospect's voice).
     try {
@@ -141,6 +205,7 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       stream.getTracks().forEach((t) => t.stop());
     } catch {
       setError("Microphone access is required. Allow it and try again.");
+      closePhone();
       setPhase("idle");
       starting.current = false;
       return;
@@ -160,10 +225,28 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
       await conversation.startSession({ conversationToken: data.conversationToken });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      closePhone();
       setPhase("idle");
       starting.current = false;
     }
   };
+
+  // The first time the prospect speaks, give the filter a few seconds to hear
+  // them. If it never does, say so and keep the normal audio for this call.
+  useEffect(() => {
+    if (phase !== "live" || !conversation.isSpeaking || phoneChecked.current) return;
+    const line = phone.current;
+    if (!line?.waiting) return;
+    phoneChecked.current = true;
+    // Not cleared when isSpeaking flips back: one check per call, even if the
+    // first line is short. Cleared on hang-up and unmount via closePhone.
+    phoneTimer.current = setTimeout(() => {
+      if (!line.heardSignal) {
+        line.bypass();
+        setPhoneUnavailable(true);
+      }
+    }, PHONE_SILENCE_FALLBACK_MS);
+  }, [phase, conversation.isSpeaking]);
 
   useEffect(() => {
     if (phase !== "live") return;
@@ -205,6 +288,36 @@ function CallUI({ callId, repName, persona, overrides }: Props) {
           )}
         </div>
       </div>
+
+      {(phase === "idle" || phase === "starting" || phase === "live") && (
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <div>
+            <span className="font-medium">Phone sound</span>
+            <span className="ml-2 text-zinc-500">
+              {phoneUnavailable
+                ? "Not supported in this browser, so you're hearing normal audio."
+                : "Makes the prospect sound like a real phone line."}
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={phoneOn}
+            aria-label="Phone sound"
+            onClick={togglePhone}
+            disabled={phoneUnavailable}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ${
+              phoneOn ? "bg-emerald-600" : "bg-zinc-300 dark:bg-zinc-700"
+            }`}
+          >
+            <span
+              className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+                phoneOn ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+      )}
 
       {phase === "idle" && (
         <button
