@@ -5,7 +5,8 @@ Cold-call practice for SDRs. Sign in, pick a prospect persona, talk to it over y
 - **Voice:** one ElevenLabs agent; each persona overrides its prompt, opening line, voice, stability and speed per call (`lib/personas.ts`). The six active personas are Outsorcy's real buyers (a Head of Marketing, an EA gatekeeper, a Head of People, a founder on a freelancer budget, a CFO in a hiring freeze, a VP Sales burned by an SDR agency); the four original generic personas are retired but still resolve for old calls.
 - **Scoring:** Claude reads the transcript against an Outsorcy offering brief and returns a structured scorecard (`lib/scoring.ts`). Scoring runs in the background after the call ends (`lib/run-scoring.ts` `finalizeCall`): the ElevenLabs transcript is swapped in once processed (up to about 150 s), then the judge runs once; the results page polls until it lands.
 - **Auth:** Clerk. Sign-ups are allow-listed to `@outsorcy.com`. Roles live in Clerk `publicMetadata.role`: rep (default), manager (sees everyone's calls), admin (also assigns roles at `/admin`).
-- **Storage:** Neon Postgres, one `calls` table (`db/schema.ts`).
+- **Custom prospects:** a rep enters a real person and company plus any signals they know (job postings, leadership changes, funding, growth), picks a male or female voice and a difficulty, and Claude researches them on the web and writes a persona in the same shape as the hand-tuned ones (`lib/custom-persona.ts`). See [Custom prospects](#custom-prospects).
+- **Storage:** Neon Postgres: `calls` and `custom_personas` (`db/schema.ts`).
 - **Stack:** Next.js App Router, TypeScript, Tailwind, Drizzle. Deploys to Render (`render.yaml`).
 
 ## Setup
@@ -82,6 +83,23 @@ pnpm judge --runs 3 fixtures/judge/cfo-overpromise.json   # repeat to gauge judg
 Run the judge fixtures after any change to the coach prompt, the taxonomy or a persona: each fixture pins the expected outcome, tags, score floors or caps, and text the coaching must or must not contain.
 
 Run `pnpm drizzle-kit push` against production before deploying schema changes — the Render build never runs it.
+
+## Custom prospects
+
+`/custom/new` collects the prospect (name, title, company, optional website and LinkedIn), the signals the rep already has, notes, voice (female: premade Sarah; male: premade Eric; set in `CUSTOM_VOICES`) and difficulty. Submitting inserts a `custom_personas` row and redirects to `/custom/<id>`, which polls while the job runs in the background (`after()`, `lib/run-custom-persona.ts`):
+
+1. **Research** (`researchProspect`): `claude-opus-5-5` with web search and web fetch writes a dossier (person, company, signals, sales org, likely priorities, unknowns) and returns the cited sources. Professional, public information only; the prompt forbids personal details and requires saying so when it cannot confirm the right person. Server-side refusal fallbacks are on (`fallbacks: "default"`), and `pause_turn` is resumed up to four times.
+2. **Build** (`generatePersona`): a structured-output call turns the dossier into persona fields, using the offering brief and Marcus as a style reference. `assemblePersona` takes identity from the rep's input, strips em and en dashes, clamps voice settings, trims the first message, and re-adds any rep signal the builder dropped, so every signal is a fact the prospect will confirm.
+
+The ready page shows the research facts (what the prospect confirms if the rep cites them), the full notes with sources, and a collapsed "hidden script" (pains, objections, reactions). Ready custom prospects also appear on the home picker under **Your real prospects**. When a call starts, the persona is snapshotted onto `calls.custom_persona` (`personaId` is `custom:<row id>`), so results, history and rescoring never depend on the source row. Only the owner can call a custom prospect; managers can view it. A failed or stuck (15 minutes) build can be retried from its page.
+
+Try research quality without the app or database:
+
+```bash
+pnpm custom-persona --name "Jordan Lee" --title "VP of Sales" --company "Acme Robotics" --voice male --funding "Series B in August" --prompt
+```
+
+Custom calls are excluded from the analytics "hardest persona" and per-persona chips, which cover the built-in personas only.
 
 ## Authorization model
 

@@ -3,7 +3,7 @@ import { getDb } from "@/db";
 import { calls, type Call, type CallStatus } from "@/db/schema";
 import { toTranscript, waitForDone } from "./elevenlabs";
 import { computeMetrics, mapTerminationReason, type CallMetrics } from "./metrics";
-import { getPersona } from "./personas";
+import { callPersona } from "./personas";
 import { scoreCall } from "./scoring";
 
 /**
@@ -52,7 +52,7 @@ export async function runScoring(call: Call): Promise<CallStatus> {
   try {
     await storeMetrics(call);
 
-    const persona = getPersona(call.personaId);
+    const persona = callPersona(call);
     const transcript = call.transcript ?? [];
     if (!persona || transcript.length === 0) {
       await markFailed();

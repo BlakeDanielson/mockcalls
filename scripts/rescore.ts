@@ -23,7 +23,7 @@ import { getDb } from "@/db";
 import { calls, type Call } from "@/db/schema";
 import { getConversation, toTranscript } from "@/lib/elevenlabs";
 import { computeMetrics, mapTerminationReason } from "@/lib/metrics";
-import { getPersona } from "@/lib/personas";
+import { callPersona } from "@/lib/personas";
 import { runScoring, storeMetrics } from "@/lib/run-scoring";
 import { scoreCall } from "@/lib/scoring";
 
@@ -131,7 +131,7 @@ async function main() {
           `${label} src=${call.transcriptSource ?? "client"} talk=${share == null ? "-" : Math.round(share * 100) + "%"} q=${m.questions.total}/${m.questions.open} int=${m.interruptions ?? "-"} endedBy=${m.endedBy}`,
         );
         if (mode === "claude") {
-          const persona = getPersona(call.personaId);
+          const persona = callPersona(call);
           if (!persona || !call.transcript?.length) {
             console.log(`${label} cannot score (no persona or empty transcript)`);
             skipped++;

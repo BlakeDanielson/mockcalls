@@ -4,7 +4,7 @@ import { CallSession } from "@/components/CallSession";
 import { getDb } from "@/db";
 import { calls } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { buildOverrides, getPersona } from "@/lib/personas";
+import { buildOverrides, callPersona } from "@/lib/personas";
 import { isUuid } from "@/lib/uuid";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,7 @@ export default async function CallPage(props: PageProps<"/call/[id]">) {
     redirect(`/call/${id}/results`);
   }
 
-  const persona = getPersona(call.personaId);
+  const persona = callPersona(call);
   if (!persona) notFound();
 
   return (

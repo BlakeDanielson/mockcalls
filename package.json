@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "tsx --test lib/*.test.ts",
     "rescore": "tsx scripts/rescore.ts",
-    "judge": "tsx scripts/judge.ts"
+    "judge": "tsx scripts/judge.ts",
+    "custom-persona": "tsx scripts/custom-persona.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

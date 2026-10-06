@@ -5,7 +5,7 @@ import { getDb } from "@/db";
 import { calls } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { formatClock, formatDate } from "@/lib/format";
-import { getPersona } from "@/lib/personas";
+import { callPersona } from "@/lib/personas";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +98,7 @@ export default async function HistoryPage(props: PageProps<"/history">) {
             </thead>
             <tbody>
               {rows.map((c) => {
-                const persona = getPersona(c.personaId);
+                const persona = callPersona(c);
                 return (
                   <tr
                     key={c.id}

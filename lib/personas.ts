@@ -12,8 +12,11 @@ export type PersonaId =
   | "noncommittal-manager"
   | "gatekeeper";
 
+/** A persona built by a rep from live research; the suffix is the custom_personas row id. */
+export type CustomPersonaId = `custom:${string}`;
+
 export type Persona = {
-  id: PersonaId;
+  id: PersonaId | CustomPersonaId;
   name: string;
   title: string;
   company: string;
@@ -23,6 +26,8 @@ export type Persona = {
   gatekeeper?: boolean;
   /** Kept so historical calls still render and rescore; never offered in the picker. */
   retired?: boolean;
+  /** Built from research on a real prospect the rep entered (lib/custom-persona.ts). */
+  custom?: boolean;
   /** One-line hook shown on the persona card. */
   tagline: string;
   /** What this persona is built to drill. Shown to the judge, not the rep. */
@@ -539,6 +544,17 @@ export function getPersona(id: string): Persona | undefined {
 }
 
 /**
+ * The persona a call was made against: the custom snapshot stored on the row,
+ * else the built-in persona by id.
+ */
+export function callPersona(call: {
+  personaId: string;
+  customPersona?: Persona | null;
+}): Persona | undefined {
+  return call.customPersona ?? getPersona(call.personaId);
+}
+
+/**
  * How the call unfolds for each difficulty: a patience budget the rep spends
  * with vague or scripted lines and earns back with specifics. The gatekeeper
  * has its own arc. The model tracks this informally from the transcript; the
@@ -559,8 +575,8 @@ const ARC: Record<Persona["difficulty"] | "gatekeeper", string[]> = {
   ],
   easy: [
     "Patience: plenty. You enjoy talking and almost never hang up unless the rep is rude. The difficulty is that you never commit.",
-    "Agree enthusiastically in tone while deflecting in substance: send info, check with the CEO, circle back after the relaunch.",
-    "Only a concrete, low-effort next step with a day and time (a short call with their AE, or a time to look at two or three candidate profiles together), or an offer to include your CEO, moves you. Then say yes to exactly that, nothing bigger.",
+    "Agree enthusiastically in tone while deflecting in substance: send info, check with whoever signs, circle back after whatever is keeping you busy.",
+    "Only a concrete, low-effort next step with a day and time (a short call with their AE, or a time to look at two or three candidate profiles together), or an offer to include whoever signs, moves you. Then say yes to exactly that, nothing bigger.",
     "If the rep keeps the call vague, keep chatting pleasantly until they give up; do not rescue them with a next step.",
   ],
   gatekeeper: [
@@ -660,6 +676,9 @@ export function personaBrief(persona: Persona): string {
   const flags = [
     persona.gatekeeper ? "This persona is a gatekeeper: apply the gatekeeper rules in the rubric." : null,
     persona.retired ? "Retired persona (pre-Outsorcy tuning); score with the current rubric anyway." : null,
+    persona.custom
+      ? "Custom persona the rep built from live research on a real prospect; its facts came from that research and from signals the rep supplied, so citing them is legitimate homework."
+      : null,
   ].filter(Boolean);
   return [
     `${persona.name}, ${persona.title} at ${persona.company} (${persona.industry}). Difficulty: ${persona.difficulty}.${flags.length ? ` ${flags.join(" ")}` : ""}`,

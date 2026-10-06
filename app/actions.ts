@@ -3,19 +3,36 @@
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { calls } from "@/db/schema";
+import { calls, customPersonas } from "@/db/schema";
 import { displayName, requireUser } from "@/lib/auth";
-import { getPersona } from "@/lib/personas";
+import { getPersona, type Persona } from "@/lib/personas";
 import { finalizeCall, STUCK_AFTER_SECS } from "@/lib/run-scoring";
 import { isUuid } from "@/lib/uuid";
 
 export async function createCall(formData: FormData) {
   const viewer = await requireUser();
-  const persona = getPersona(String(formData.get("personaId") ?? ""));
+  const db = getDb();
+  const requested = String(formData.get("personaId") ?? "");
+
+  // A custom persona is snapshotted onto the call; only its owner can use it,
+  // and only once research has finished.
+  let persona: Persona | undefined;
+  let customPersona: Persona | null = null;
+  if (requested.startsWith("custom:")) {
+    const rowId = requested.slice("custom:".length);
+    const row = isUuid(rowId)
+      ? await db.query.customPersonas.findFirst({
+          where: and(eq(customPersonas.id, rowId), eq(customPersonas.userId, viewer.userId)),
+          columns: { status: true, persona: true },
+        })
+      : undefined;
+    if (row?.status === "ready" && row.persona) persona = customPersona = row.persona;
+  } else {
+    persona = getPersona(requested);
+  }
   if (!persona || persona.retired) redirect("/?error=missing");
 
   const repName = await displayName();
-  const db = getDb();
 
   // A double submit (two clicks before the redirect) and any abandoned
   // `created` row converge on one row: reuse the caller's newest call that
@@ -29,14 +46,14 @@ export async function createCall(formData: FormData) {
     .limit(1);
   const [reused] = await db
     .update(calls)
-    .set({ personaId: persona.id, repName, createdAt: new Date() })
+    .set({ personaId: persona.id, customPersona, repName, createdAt: new Date() })
     .where(and(inArray(calls.id, newest), eq(calls.status, "created")))
     .returning({ id: calls.id });
   if (reused) redirect(`/call/${reused.id}`);
 
   const [row] = await db
     .insert(calls)
-    .values({ userId: viewer.userId, repName, personaId: persona.id })
+    .values({ userId: viewer.userId, repName, personaId: persona.id, customPersona })
     .returning({ id: calls.id });
 
   redirect(`/call/${row.id}`);

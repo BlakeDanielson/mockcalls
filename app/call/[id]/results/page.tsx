@@ -12,7 +12,7 @@ import { getDb } from "@/db";
 import { calls } from "@/db/schema";
 import { canSeeCall, requireUser } from "@/lib/auth";
 import { formatClock, formatDate } from "@/lib/format";
-import { getPersona } from "@/lib/personas";
+import { callPersona } from "@/lib/personas";
 import { STUCK_AFTER_SECS } from "@/lib/run-scoring";
 import { isUuid } from "@/lib/uuid";
 
@@ -36,7 +36,7 @@ export default async function ResultsPage(
     },
   });
   if (!call || !canSeeCall(call, viewer)) notFound();
-  const persona = getPersona(call.personaId);
+  const persona = callPersona(call);
   if (!persona) notFound();
 
   const unfinished = call.status === "created" || call.status === "in_call";

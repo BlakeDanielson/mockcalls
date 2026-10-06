@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
 import { SCORE_ROWS, TILE_CLASS, outcomeLabel, scoreColor } from "@/components/ScorecardView";
@@ -84,6 +84,7 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
         userId: calls.userId,
         repName: calls.repName,
         personaId: calls.personaId,
+        customPersonaName: sql<string | null>`${calls.customPersona}->>'name'`,
         status: calls.status,
         createdAt: calls.createdAt,
         scorecard: calls.scorecard,
@@ -361,7 +362,7 @@ export default async function AnalyticsPage(props: PageProps<"/analytics">) {
                                   {formatDate(c.createdAt)}
                                 </Link>
                               </td>
-                              <td className="px-3 py-2">{persona?.name ?? c.personaId}</td>
+                              <td className="px-3 py-2">{persona?.name ?? c.customPersonaName ?? c.personaId}</td>
                               <td className="px-3 py-2 tabular-nums">{c.durationSecs != null ? formatClock(c.durationSecs) : "—"}</td>
                               <td className="px-3 py-2">{outcomeLabel(c.scorecard.outcome)}</td>
                               <td className={`px-3 py-2 text-right font-medium tabular-nums ${scoreColor(c.scorecard.overall)}`}>
